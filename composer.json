@@ -1,0 +1,15 @@
+{
+    "name": "veeam/rest-api-demo-vbo365",
+    "description": "Veeam RESTful Demo VBO365",
+    "authors": [
+        {
+            "name": "Niels Engelen",
+            "email": "niels@foonet.be"
+        }
+    ],
+    "require": {
+            "guzzlehttp/guzzle": "~6.0",
+            "components/jquery": "3.2",
+            "twbs/bootstrap": "~3.3"
+    }
+}

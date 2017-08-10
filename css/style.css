@@ -1,0 +1,127 @@
+/* Globals */
+body {
+  font: 13px/19px  Arial, Helvetica, sans-serif;
+  background: #54B948;
+}
+
+h1, h2, h3 {
+  color: #000000;
+  margin-left: 20px;
+}
+
+/* Menu */
+nav#menu {
+  position: fixed;
+  color: #ffffff;
+  top: 80px;
+  left: 0;
+  bottom: 0;
+  display: block;
+  float: left;
+  width: 100%;
+  max-width: 210px;
+  height: 100%;
+  -moz-transition: all 300ms;
+  -webkit-transition: all 300ms;
+  transition: all 300ms;
+  overflow: auto;
+  height: 100%;
+}
+
+nav#menu > ul {
+  display: block;
+  margin: 40px;
+  padding: 0;
+  list-style: none;
+  -moz-transition: all 300ms;
+  -webkit-transition: all 300ms;
+  transition: all 300ms;
+}
+
+nav#menu > ul li {
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+li {
+  list-style: none;
+}
+
+/*
+  Header Menu
+*/
+#hdr {
+  background-color: #54B948;
+  padding-top: 110px;
+}
+
+header.hdr {
+  background-color: #54B948;
+  height: 110px;
+}
+
+img.headerlogo {
+  display: block;
+  max-width: 150px;
+  max-height: 68px;
+  width: 100%;
+  height: auto;
+  margin-left: 25px;
+  margin-top: 20px;
+}
+
+/* Content */
+* {
+  word-wrap: break-word;
+}
+
+div#content {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 210px;
+  padding: 60px;
+  background: #fcfeff;
+  border-left: 1px solid #000000;
+  overflow: auto;
+  transition: all 300ms;
+}
+
+pre {
+  overflow: auto;
+  height: 100%;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.zeroPadding {
+  padding: 0 !important;
+}
+
+/* Login form */
+.container {
+  position: fixed;
+}
+
+.form-login {
+  background-color: #EDEDED;
+  padding-top: 10px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 10px;
+  border-radius: 5px;
+  border-color:#d2d2d2;
+  border-width: 5px;
+  box-shadow:0 1px 0 #cfcfcf;
+}
+
+.form-control {
+  border-radius: 10px;
+}
+
+.wrapper {
+  text-align: center;
+}
