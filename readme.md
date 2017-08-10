@@ -4,7 +4,7 @@ Veeam Backup for Office 365
 Veeam Backup for Office 365 RESTful API demo (Beta)
 
 ## Dependencies
-Make sure you download dependencies using `composer`. This project relies on [GuzzleHTTP](https://github.com/guzzle/guzzle) and [Twitter Bootstrap](http://getbootstrap.com/).
+Make sure you download dependencies using `composer`. This project relies on [GuzzleHTTP](https://github.com/guzzle/guzzle), [jQuery](https://jquery.com/) and [Twitter Bootstrap](http://getbootstrap.com/).
 
 ## Installation
 ### 1. Download and install composer
