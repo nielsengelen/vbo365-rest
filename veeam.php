@@ -830,6 +830,22 @@ if ($action == 'getorganizations') {
 		$('[href="#step3"]').tab('show');
 		return false;
 	});
+	
+	$('#job-backupall').on('change', function(e) {
+		$('#job-mailboxes').addClass('hide'); 
+	});
+	
+	$('#org-serverusessl').on('change', function(e) {
+		if (this.checked) {
+			$('#org-serverskipca').prop('disabled', false);
+			$('#org-serverskipcn').prop('disabled', false);
+			$('#org-serverskiprc').prop('disabled', false);
+		} else {
+			$('#org-serverskipca').prop('disabled', true);
+			$('#org-serverskipcn').prop('disabled', true);
+			$('#org-serverskiprc').prop('disabled', true);
+		}
+	});
 	</script>
 	<div id="wizard" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="wizardlabel" aria-hidden="true">
 		<div class="modal-dialog">
@@ -887,13 +903,13 @@ if ($action == 'getorganizations') {
 						<label for="org-onpremises">On-premises Exchange connection settings</label><br />
 						Server: <input type="text" class="form-control" id="org-server"></input><br />
 						<input type="checkbox" id="org-serverusessl"> Use SSL<br />
-						<input type="checkbox" id="org-serverskipca"> Skip certificate trusted authority verification<br />
-						<input type="checkbox" id="org-serverskipcn"> Skip certificate common name verification<br />
-						<input type="checkbox" id="org-serverskiprc"> Skip revocation check<br />
+						<input type="checkbox" id="org-serverskipca" disabled> Skip certificate trusted authority verification<br />
+						<input type="checkbox" id="org-serverskipcn" disabled> Skip certificate common name verification<br />
+						<input type="checkbox" id="org-serverskiprc" disabled> Skip revocation check<br />
 						Username: <input type="text" class="form-control" id="org-user-local" placeholder="DOMAIN\username"></input>
 						Password: <input type="password" class="form-control" id="org-pass-local"></input>
-						<input type="checkbox" id="org-grant"> Grant impersonation to this user<br />
-						<input type="checkbox" id="org-policy"> Configure throttling policy
+						<input type="checkbox" id="org-grant" checked> Grant impersonation to this user<br />
+						<input type="checkbox" id="org-policy" checked> Configure throttling policy
 				   </div>
 				   <a class="btn btn-default prev pull-left" href="#">Previous</a>
 				   <button class="btn btn-success pull-right" id="btn-create-wizard" data-call="createorganization" title="Finish">Finish</button>
