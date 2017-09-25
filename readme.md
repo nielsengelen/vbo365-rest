@@ -20,7 +20,16 @@ Make sure you download dependencies using `composer`. This project relies on [Gu
 Modify the config.php file with your Veeam Backup for Office 365 hostname/IP and port (default: 4443).
 
 ## Usage
-Open a webbrowser and go to index.php 
+Open a webbrowser and go to index.php
+
+You should see something like:
+![Login form](http://foonet.be/img/VBO-REST01.png)
+
+And once logged in it looks like:
+![Dashboard](http://foonet.be/img/VBO-REST02.png)
+
+Example of an organization mailbox overview:
+![Mailbox overview](http://foonet.be/img/VBO-REST03.png)
 
 ## About
 This serves as an example on how to work with the RESTful API calls and shouldn't be used in production. Feel free to modify and re-use it however many calls are done with default values which can be modified if needed.
