@@ -4,114 +4,253 @@ error_reporting(E_ALL || E_STRICT);
 require 'config.php';
 require 'veeam.class.php';
 
-$veeam = new VBO($host, $port, $user, $pass);
+session_start();
+
+if (empty($host) || empty($port)) {
+	exit('Please modify the configuration file first and configure the Veeam Backup for Office 365 host and port settings.');
+}
+
+$veeam = new VBO($host, $port);
+
+if (isset($_SESSION['token'])) {
+	$veeam->setToken($_SESSION['token']);
+}
+
+if (isset($_POST['logout'])) {
+	if (isset($_SESSION['rid'])) {
+		$veeam->endSession($_SESSION['rid']);
+	}
+	
+	$veeam->logout();
+} else {
+	if (!empty($_POST['user'])) { $user = $_POST['user']; }
+	if (!empty($_POST['pass'])) { $pass = $_POST['pass']; }
+
+	if (isset($user) && isset($pass)) {
+		$veeam->login($user, $pass);
+
+		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
+		$_SESSION['token'] = $veeam->getToken();
+		$_SESSION['user'] = $user;
+	} else {
+		if (isset($_SESSION['refreshtoken'])) {
+			$veeam->refreshToken($_SESSION['refreshtoken']);
+		}
+	}
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<title>API demo for Veeam Backup for Office 365</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">	
+	<title>Veeam Backup for Office 365 RESTful API demo</title>
 	<link rel="shortcut icon" href="images/favicon.ico" />
 	<link rel="stylesheet" type="text/css" href="vendor/twbs/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" type="text/css" href="vendor/twbs/bootstrap/dist/css/bootstrap-theme.min.css" />
 	<link rel="stylesheet" href="css/font-awesome.min.css" media="screen" />
-	<link rel="stylesheet" href="css/style.css" media="screen" />	
+	<link rel="stylesheet" href="css/style.css" media="screen" />
     <script src="vendor/components/jquery/jquery.min.js"></script>
+	<script src="js/jquery.backstretch.min.js"></script>
     <script src="vendor/twbs/bootstrap/dist/js/bootstrap.min.js"></script>
 	<script src="js/bootbox.min.js"></script>
-	<script>
-	$(document).ready(function() {
-	  $('#menusection li').click(function () {
-		var id = this.id;
-		if (id == 'logout') {
-			$.post('index.php', {'logout' : true}, function(data) {
-				alert('Logout succesful.');
-				window.location.replace('index.php');
-			});
-		} else {
-			var call = $(this).attr('data-call');
-			$.get('veeam.php', {'action' : call, 'id' : id}, function(data) {
-				$('#content').html('<h1>API demo for Veeam Backup for Office 365 1.5 (BETA)</h1>' + data)
-			});
-		}
-	  });
-	  
-	  $(document).on('click', '#btn-start-item-restore', function(e) {
-		var id = $(this).data('id');
-			
-		bootbox.confirm({
-			message: 'Start item restore wizard?',
-			callback: function (result) {
-				if (result) {
-					$.get('veeam.php', {'id' : id, action : 'startrestore'}).done(function(data) {
-						bootbox.alert({
-							message: 'Wizard has been started and you can now perform item restores.',
-							backdrop: true
-						});
-						
-						alert(data);
-						$('#div-item-restore').html('<button class="btn btn-default" id="btn-end-item-restore" data-orgid="' + id + '" data-id="' + data + '" title="End item restore">End item restore</button>');
-					});
-				}
-			}
-		});
-	  });
-	  
-	  $(document).on('click', '#btn-end-item-restore', function(e) {
-		var id = $(this).data('id');
-		var orgid = $(this).data('orgid');
-		
-		bootbox.confirm({
-			message: 'Terminate item restore wizard?',
-			callback: function (result) {
-				if (result) {
-					$.get('veeam.php', {'id' : id, action : 'endrestore'}).done(function(data) {
-						bootbox.alert({
-							message: 'Wizard has been terminated.',
-							backdrop: true
-						});
-
-						$('#div-item-restore').html('<button class="btn btn-default" id="btn-start-item-restore" data-id="' + orgid + '" title="Start item restore">Start item restore</button>');
-					});
-				}
-			}
-		});
-	  });
-	});
-	</script>
+	<script src="js/wizard.js"></script>
 </head>
 <body>
-<div>
-	<header class="hdr">
-		<a href="index.php"><img src="images/logo.svg" alt="Veeam Backup for Office 365" class="headerlogo" /></a>
-	</header>
-	<nav id="menu">
-		<ul>		
-			<div id="menusection">
-				<strong>Organizations:</strong><br />
-				<?php
-				$org = $veeam->getOrganization();
-				
-				for ($i = 0; $i < count($org); $i++) {
-					echo '<li id="' . $org[$i]['id'] . '" data-call="getmailbox">' . $org[$i]['name'] . '</li>';
-				}
-				?>
-				<br />
-				<li class="divider"></li>
-				<strong>Configuration:</strong><br />
-				<li id="jobs" data-call="getjobs">Jobs</li>
-				<li class="divider"></li>
-				<strong>Infrastructure:</strong>
-				<li id="proxies" data-call="getproxies">Proxies</li>
-				<li id="repositories" data-call="getrepos">Repositories</li>
+<?php
+if (isset($_SESSION['token'])) {
+	/* 'Hack' to see if we are logged in as full admin or end user by email check on the user stored in the session */
+	$user = $_SESSION['user'];
+	$check = filter_var($user, FILTER_VALIDATE_EMAIL);
+	
+	if ($check === false) {
+		$org = $veeam->getOrganizations();
+	}
+?>
+<header class="hdr">
+	<a href="index.php"><img src="images/logo.svg" alt="Veeam Backup for Office 365" class="headerlogo" /></a>
+</header>
+<nav id="menu">
+	<ul>		
+		<div id="menusection">
+		<?php 
+		echo '<li class="divider"></li>';
+		
+		if ($check === false) {
+			echo '<strong>Organizations:</strong><br />';
+			for ($i = 0; $i < count($org); $i++) {
+				echo '<li id="' . $org[$i]['id'] . '" data-call="getmailboxes">' . $org[$i]['name'] . '</li>';
+			}
+			echo '<br />';
+			echo '<li class="divider"></li>';
+			echo '<strong>Configuration:</strong><br />';
+			echo '<li id="jobs" data-call="getjobs"><i class="fa fa-calendar"></i> Jobs</li>';
+			echo '<li class="divider"></li>';
+			echo '<strong>Infrastructure:</strong>';
+			echo '<li id="organizations" data-call="getorganizations"><i class="fa fa-building"></i> Organizations</li>';
+			echo '<li id="proxies" data-call="getproxies"><i class="fa fa-server"></i> Proxies</li>';
+			echo '<li id="repositories" data-call="getrepositories"><i class="fa fa-database"></i> Repositories</li>';
+			echo '<li id="sessions" data-call="getsessions"><i class="fa fa-file-text"></i> Restore sessions</li>';
+			echo '<br />';
+			echo '<li class="divider"></li>';
+		} else {
+			echo '<li id="mailbox" data-call="getmailbox"><i class="fa fa-envelope"></i> Mailbox</li>';
+		}
+		
+		echo '<li id="logout"><i class="fa fa-sign-out"></i> Logout</li>';
+		?>
+		</div>
+	</ul>
+</nav>
+<div id="content">
+	<h1>Veeam Backup for Office 365 RESTful API demo</h1>
+	<br />
+	<?php
+	if ($check === false) {
+		/* Required for dashboard stats */
+		$jobs = $veeam->getJobs();
+		$proxies = $veeam->getProxies();
+		$repos = $veeam->getBackupRepositories();
+	?>
+	<div class="row">
+		<div class="col-lg-3 col-md-6">
+		  <div class="panel panel-primary">
+			<div class="panel-heading">
+			  <div class="row">
+				<div class="col-xs-4">
+				  <i class="fa fa-building fa-4x"></i>
+				</div>
+				<div class="col-xs-8 text-left">
+				  <div class="medium">&nbsp;<?php echo count($org); ?> organizations</div>
+				</div>
+			  </div>
 			</div>
-		</ul>
-	</nav>
+			<a href="#" data-call="getorganizations" id="organizationspanel">
+			<div class="panel-footer">
+			  <span class="pull-left">Manage</span>
+			  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+			  <div class="clearfix"></div>
+			</div>
+			</a>
+		  </div>
+		</div>
+		<div class="col-lg-3 col-md-6">
+		  <div class="panel panel-green">
+			<div class="panel-heading">
+			  <div class="row">
+				<div class="col-xs-4">
+				  <i class="fa fa-calendar fa-4x"></i>
+				</div>
+				<div class="col-xs-8 text-left">
+				  <div class="medium">&nbsp;<?php echo count($jobs); ?> jobs</div>
+				</div>
+			  </div>
+			</div>
+			<a href="#" data-call="getjobs" id="jobspanel">
+			<div class="panel-footer">
+			  <span class="pull-left">Manage</span>
+			  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+			  <div class="clearfix"></div>
+			</div>
+			</a>
+		  </div>
+		</div>
+		<div class="col-lg-3 col-md-6">
+		  <div class="panel panel-yellow">
+			<div class="panel-heading">
+			  <div class="row">
+				<div class="col-xs-4">
+				  <i class="fa fa-server fa-4x"></i>
+				</div>
+				<div class="col-xs-8 text-left">
+				  <div class="medium">&nbsp;<?php echo count($proxies); ?> proxies</div>
+				</div>
+			  </div>
+			</div>
+			<a href="#" data-call="getproxies" id="proxiespanel">
+			<div class="panel-footer">
+			  <span class="pull-left">Manage</span>
+			  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+			  <div class="clearfix"></div>
+			</div>
+			</a>
+		  </div>
+		</div>
+		<div class="col-lg-3 col-md-6">
+		  <div class="panel panel-lightgreen">
+			<div class="panel-heading">
+			  <div class="row">
+				<div class="col-xs-4">
+				  <i class="fa fa-database fa-4x"></i>
+				</div>
+				<div class="col-xs-8 text-left">
+				  <div class="medium">&nbsp;<?php echo count($repos); ?> repositories</div>
+				</div>
+			  </div>
+			</div>
+			<a href="#" data-call="getrepositories" id="repospanel">
+			<div class="panel-footer">
+			  <span class="pull-left">Manage</span>
+			  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+			  <div class="clearfix"></div>
+			</div>
+			</a>
+		  </div>
+		</div>
+	</div>
+	<?php
+	} else {
+		echo 'Welcome to the self service restore demo.';
+	}
+	?>
 </div>
-<div>
-	<div id="content">
-		<h1>API demo for Veeam Backup for Office 365 1.5 (BETA)</h1>
+<?php
+} else {
+?>
+<link rel="stylesheet" href="css/form-elements.css" media="screen" />
+<div id="login-content">
+	<div class="top-content">
+		<div class="container">
+			<div class="row">
+				<div class="col-sm-6 col-sm-offset-3 form-box">
+					<div class="form-top">
+						<div class="form-top-left">
+							<h3>Veeam Backup for Office 365 RESTful API demo</h3>
+							<p>Enter your username and password to log on.</p>
+							<?php
+							if ($login == '400') {
+								echo '<div class="alert alert-error alert-dismissible alert-login" role="alert">';
+								echo '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
+								echo 'Incorrect Username or Password!';
+								echo '</div>';								
+							}
+							?>
+						</div>
+						<div class="form-top-right">
+							<i class="fa fa-lock"></i>
+						</div>
+					</div>
+					<div class="form-bottom">
+						<form role="form" action="" method="post" class="form-login">
+							<div class="form-group">
+								<label class="sr-only" for="user">Username</label>
+								<input type="text" name="user" placeholder="Username or email" class="form-user form-control" autofocus><span class="fa fa-user fa-2x icon"></span>
+							</div>
+							<div class="form-group">
+								<label class="sr-only" for="pass">Password</label>
+								<input type="password" name="pass" class="form-pass form-control"><span class="fa fa-lock fa-2x icon"></span>
+							</div>
+							<button type="submit" class="btn-login">Login</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>
+<?php
+}
+?>
+<script src="js/veeam.js"></script>
 </body>
 </html>

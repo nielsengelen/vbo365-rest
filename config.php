@@ -1,6 +1,4 @@
 <?php
-$host = 'IP/HOSTNAME';
+$host = 'VBOSERVER';
 $port = '4443';
-$user = 'Administrator';
-$pass = 'Veeam123';
 ?>
