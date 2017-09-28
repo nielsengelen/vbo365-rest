@@ -660,7 +660,7 @@ class VBO {
   public function logout() {
 	unset($_SESSION);
 	session_destroy();
-	header('Location: index.php');
+	header("Refresh:0");
   }
   
   public function refreshToken($refreshtoken) {
@@ -918,6 +918,7 @@ class VBO {
 						'Accept'        => 'application/json',
 						'Content-Type'  => 'application/json'
 					],
+					'http_errors' => false,
 					'verify' => false,
 					'body' => '{ "explore": { "datetime": "' . gmdate("Y-m-d H:i:s") .'" } }'
 				]
@@ -927,6 +928,10 @@ class VBO {
 		
 		if ($response->getStatusCode() === 201) {			
 			return($result);
+		}
+		
+		if ($response->getStatusCode() === 401) {			
+			$this->logout();
 		}
 	} catch (RequestException $e) {
 		if ($e->hasResponse()) {

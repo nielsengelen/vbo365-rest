@@ -1,8 +1,8 @@
 <?php
 error_reporting(E_ALL || E_STRICT);
 
-require 'config.php';
-require 'veeam.class.php';
+require_once('config.php');
+require_once('veeam.class.php');
 
 session_start();
 
@@ -27,7 +27,7 @@ if (isset($_POST['logout'])) {
 	if (!empty($_POST['pass'])) { $pass = $_POST['pass']; }
 
 	if (isset($user) && isset($pass)) {
-		$veeam->login($user, $pass);
+		$login = $veeam->login($user, $pass);
 
 		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
 		$_SESSION['token'] = $veeam->getToken();
@@ -79,25 +79,26 @@ if (isset($_SESSION['token'])) {
 		if ($check === false) {
 			echo '<strong>Organizations:</strong><br />';
 			for ($i = 0; $i < count($org); $i++) {
-				echo '<li id="' . $org[$i]['id'] . '" data-call="getmailboxes">' . $org[$i]['name'] . '</li>';
+				echo '<li id="' . $org[$i]['id'] . '" data-call="mailboxes">' . $org[$i]['name'] . '</li>';
 			}
 			echo '<br />';
 			echo '<li class="divider"></li>';
 			echo '<strong>Configuration:</strong><br />';
-			echo '<li id="jobs" data-call="getjobs"><i class="fa fa-calendar"></i> Jobs</li>';
+			echo '<li id="jobs" data-call="jobs"><i class="fa fa-calendar"></i> Jobs</li>';
 			echo '<li class="divider"></li>';
 			echo '<strong>Infrastructure:</strong>';
-			echo '<li id="organizations" data-call="getorganizations"><i class="fa fa-building"></i> Organizations</li>';
-			echo '<li id="proxies" data-call="getproxies"><i class="fa fa-server"></i> Proxies</li>';
-			echo '<li id="repositories" data-call="getrepositories"><i class="fa fa-database"></i> Repositories</li>';
-			echo '<li id="sessions" data-call="getsessions"><i class="fa fa-file-text"></i> Restore sessions</li>';
-			echo '<br />';
-			echo '<li class="divider"></li>';
+			echo '<li id="organizations" data-call="organizations"><i class="fa fa-building"></i> Organizations</li>';
+			echo '<li id="proxies" data-call="proxies"><i class="fa fa-server"></i> Proxies</li>';
+			echo '<li id="repositories" data-call="repositories"><i class="fa fa-database"></i> Repositories</li>';
+			echo '<li id="sessions" data-call="sessions"><i class="fa fa-file-text"></i> Restore sessions</li>';
 		} else {
-			echo '<li id="mailbox" data-call="getmailbox"><i class="fa fa-envelope"></i> Mailbox</li>';
+			echo '<li id="mailbox" data-call="mailbox"><i class="fa fa-envelope"></i> Mailbox</li>';
 		}
 		
+		echo '<li class="divider"></li>';
 		echo '<li id="logout"><i class="fa fa-sign-out"></i> Logout</li>';
+		echo '<li class="divider"></li>';
+		echo '<li id="about"><i class="fa fa-question-circle-o"></i> About</li>';
 		?>
 		</div>
 	</ul>
@@ -125,7 +126,7 @@ if (isset($_SESSION['token'])) {
 				</div>
 			  </div>
 			</div>
-			<a href="#" data-call="getorganizations" id="organizationspanel">
+			<a href="#" id="organizationspanel">
 			<div class="panel-footer">
 			  <span class="pull-left">Manage</span>
 			  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
@@ -146,7 +147,7 @@ if (isset($_SESSION['token'])) {
 				</div>
 			  </div>
 			</div>
-			<a href="#" data-call="getjobs" id="jobspanel">
+			<a href="#" id="jobspanel">
 			<div class="panel-footer">
 			  <span class="pull-left">Manage</span>
 			  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
@@ -167,7 +168,7 @@ if (isset($_SESSION['token'])) {
 				</div>
 			  </div>
 			</div>
-			<a href="#" data-call="getproxies" id="proxiespanel">
+			<a href="#" id="proxiespanel">
 			<div class="panel-footer">
 			  <span class="pull-left">Manage</span>
 			  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
@@ -188,7 +189,7 @@ if (isset($_SESSION['token'])) {
 				</div>
 			  </div>
 			</div>
-			<a href="#" data-call="getrepositories" id="repospanel">
+			<a href="#" id="repositoriespanel">
 			<div class="panel-footer">
 			  <span class="pull-left">Manage</span>
 			  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>

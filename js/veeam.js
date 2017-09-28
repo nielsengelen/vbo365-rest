@@ -9,12 +9,12 @@ $(document).ready(function(e) {
 	 ], {duration: 3000, fade: 750});
 	 
 	/* Form validation */
-    $('.form-login input[type="text"], .form-login input[type="password"]').on('focus', function() {
+    $('.form-login input[type="text"], .form-login input[type="password"]').on('focus', function(e) {
     	$(this).removeClass('input-error');
     });
     
     $('.form-login').on('submit', function(e) {
-    	$(this).find('input[type="text"], input[type="password"]').each(function(){
+    	$(this).find('input[type="text"], input[type="password"]').each(function(e){
     		if ($(this).val() == '') {
     			e.preventDefault();
     			$(this).addClass('input-error');
@@ -25,10 +25,10 @@ $(document).ready(function(e) {
     });
 	
 	/* Main content */
-	$('#menusection li').click(function (e) {
+	$('#menusection li').click(function(e) {
 		var id = this.id;
 		
-		if (typeof id === undefined || !id) {
+		if (typeof id === undefined || !id || id == 'about') {
 			return;
 		}
 		
@@ -47,48 +47,52 @@ $(document).ready(function(e) {
 		} else {
 			var call = $(this).attr('data-call');
 			
-			$.get('veeam.php', {'action' : call, 'id' : id}, function(data) {
-				$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-			});
+			if (call == 'mailboxes') {
+				$('#content').load('includes/' + call + '.php?id=' + id);
+			} else {
+				$('#content').load('includes/' + call + '.php');
+			}
 		}
 	});
 	
-	$("#jobspanel").click(function(e) {
-	  var call = $(this).attr('data-call');
-	  
-      $.get('veeam.php', {'action' : call, 'id' : 'jobs'}, function(data) {
-		$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
+	$('#about').click(function(e) {
+		var about = 'This project is community driven and is not created by Veeam R&amp;D nor validated by Veeam QA. It is maintained by community members which might be or not be Veeam employees. It is distributed under the MIT license.<br /><br /> \
+		Contributions, bug reports and feature requests can be added via <a href="https://github.com/nielsengelen/" target="_blank">GitHub</a>. <br /><br />\
+		Contributors: <br />\
+		<ul><li>Niels Engelen <a href="https://twitter.com/nielsengelen" target="_blank">@nielsengelen</a></li></ul><hr /> \
+		Copyright (c) 2017 VeeamHub<br /><br /> \
+		Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br /><br /> \
+		The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br /><br /> \
+		THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.';
+		
+		bootbox.dialog({
+			title: 'About',
+			message: about,
+			backdrop: true
+		});
 	  });
+	
+	$('#jobspanel').click(function(e) {
+	  $('#content').load('includes/jobs.php');
     });
 	
-	$("#organizationspanel").click(function(e) {
-	  var call = $(this).attr('data-call');
-	  
-      $.get('veeam.php', {'action' : call, 'id' : 'organizations'}, function(data) {
-		$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-	  });
+	$('#organizationspanel').click(function(e) {
+	  $('#content').load('includes/organizations.php');
     });
 	
-	$("#proxiespanel").click(function(e) {
-	  var call = $(this).attr('data-call');
-	  
-      $.get('veeam.php', {'action' : call, 'id' : 'proxies'}, function(data) {
-		$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-	  });
+	$('#proxiespanel').click(function(e) {
+	  $('#content').load('includes/proxies.php');
     });
 	
-	$("#repospanel").click(function(e) {
-	  var call = $(this).attr('data-call');
-	  
-      $.get('veeam.php', {'action' : call, 'id' : 'repositories'}, function(data) {
-		$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-	  });
+	$('#repositoriespanel').click(function(e) {
+	  $('#content').load('includes/repositories.php');
     });
 	
 	/* Iteam search */
-    $("#search").keyup(function(e) {
+    $('#search').keyup(function(e) {
         var searchText = $(this).val().toLowerCase();
-        // Show only matching row, hide rest of them
+		
+        /* Show only matching row, hide rest of them */
         $.each($('[name="table-mailitems"] tbody tr'), function(e) {
             if($(this).text().toLowerCase().indexOf(searchText) === -1)
                $(this).hide();
@@ -98,7 +102,7 @@ $(document).ready(function(e) {
     });
 });
 
-String.prototype.capitalize = function() {
+String.prototype.capitalize = function(e) {
     return this.charAt(0).toUpperCase() + this.slice(1);
 }
 
@@ -143,9 +147,7 @@ $(document).on('click', '#btn-delete', function(e) {
 							backdrop: true
 						});
 						
-						$.get('veeam.php', {'action' : rcall}, function(data) {
-							$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-						});
+						$('#content').load('includes/' + rcall + '.php');
 					});
 				}
 			}
@@ -163,9 +165,7 @@ $(document).on('click', '#btn-delete', function(e) {
 							backdrop: true
 						});
 
-						$.get('veeam.php', {'action' : rcall}, function(data) {
-							$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-						});
+						$('#content').load('includes/' + rcall + '.php');
 					});
 				}
 			}
@@ -230,9 +230,7 @@ $(document).on('click', '#btn-stop-item-restore', function(e) {
 				});
 			}
 			
-			$.get('veeam.php', {'action' : 'getmailboxes', 'id' : oid}, function(data) {
-				$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-			});
+			$('#content').load('includes/mailboxes.php?id=' + oid);
 		}
 	});
 });
@@ -268,7 +266,7 @@ $(document).on('click', '#btn-restore-different', function(e) {
   
 	$.get('veeam.php', {'action' : 'listfolders', 'id' : oid}, function(data) {
 		var response = data.split('#');
-		console.log(data + ' --- \n ' + response);
+		
 		for (i = 0; i < response.length-1; ++i) {
 			$('#restore-folder').append('<option value="' + response[i] + '">' + response[i] + '</option>');
 		}
@@ -395,12 +393,26 @@ $(document).on('click', 'a[name="link-restore"]', function(e) {
 	
 	$.get('veeam.php', {action : 'getitems', 'id' : id}).done(function(data) {
 		var response = JSON.parse(data);
+		
 		$('#table-mailitems-' + mid + ' tbody').empty(); /* Clear the items table */
+		
+		if (response === undefined || response === null) {
+			bootbox.alert({
+				message: 'Couldn\'t load mailbox items.',
+				backdrop: true
+			});
+			
+			$('#table-mailitems-' + mid + ' tbody').append('<tr><td colspan="3">No e-mails found.</td></tr>');
+			
+			return;
+		}
 		
 		if (response.results.length != '0') {
 			for (var i = 0; i < response.results.length; i++) {
 				var date = Date(response.results[i].received).toString();
+				
 				date = date.split('(');
+				
 				$('#table-mailitems-' + mid + ' tbody').append('<tr> \
 					<td>' + response.results[i].from + '</td> \
 					<td>' + response.results[i].subject + '</td> \

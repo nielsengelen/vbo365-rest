@@ -153,11 +153,6 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 			var region = $('#org-region').val();
 			var user = $('#org-user-o365').val();
 			var pass = $('#org-pass-o365').val();
-			
-			/* Fix for JSON - DOMAIN\username needs to have double \ */
-			if ((/\\/).test(user)) {
-				user = user.replace(/\\/g, '\\\\');
-			}
 
 			var json = '{ \
 					"type": "' + deptype + '", \
