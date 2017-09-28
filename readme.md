@@ -1,7 +1,7 @@
 Veeam Backup for Office 365
 ==================
 
-Veeam Backup for Office 365 RESTful API demo (Beta)
+Veeam Backup for Office 365 RESTful API demo
 
 ## Dependencies
 Make sure you download dependencies using `composer`. This project relies on [GuzzleHTTP](https://github.com/guzzle/guzzle), [jQuery](https://jquery.com/), [Twitter Bootstrap](http://getbootstrap.com/) and [Bootbox.js](http://bootboxjs.com/).
@@ -37,4 +37,4 @@ This serves as an example on how to work with the RESTful API calls and shouldn'
 ## Known issues
 * When performing item restore via the full admin view it is required to terminate the session via the button 'End item restore' or the session will keep running in the background.
 
-**Note:** There is currently no SSL verification due to beta and self signed certificate testing, please change settings 'verify' to true or remove it accordingly in `veeam.class.php`.
+**Note:** There is currently no SSL verification due to self signed certificate testing, please change settings 'verify' to true or remove the specific line accordingly in `veeam.class.php`.
