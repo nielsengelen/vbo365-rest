@@ -46,12 +46,14 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 		if (typeof name === undefined || !name) {
 			$('#infobox').html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="label label-danger">Error</span><br /><strong>No job name defined.</strong></div>');
 			$('#wizard').modal('hide');
+			
 			return false;
 		}
 		
 		if (typeof setting === undefined || !setting) {
 			$('#infobox').html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="label label-danger">Error</span><br /><strong>Please define which mailboxes to backup (specific or all).</strong></div>');
 			$('#wizard').modal('hide');
+			
 			return false;
 		}
 		
@@ -218,12 +220,14 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 		if (typeof user === undefined || !user) {
 			$('#infobox').html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="label label-danger">Error</span><br /><strong>No username defined.</strong></div>');
 			$('#wizard').modal('hide');
+			
 			return false;
 		}
 		
 		if (typeof pass === undefined || !pass) {
 			$('#infobox').html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="label label-danger">Error</span><br /><strong>No password defined.</strong></div>');
 			$('#wizard').modal('hide');
+			
 			return false;
 		}			
 
@@ -252,17 +256,20 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 						
 		if (typeof name === undefined || !name) {
 			$('#infobox').html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="label label-danger">Error</span><br /><strong>No proxy name defined.</strong></div>');
-			return;
+			
+			return false;
 		}
 		
 		if (typeof user === undefined || !user) {
 			$('#infobox').html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="label label-danger">Error</span><br /><strong>No username defined.</strong></div>');
-			return;
+			
+			return false;
 		}
 		
 		if (typeof pass === undefined || !pass) {
 			$('#infobox').html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="label label-danger">Error</span><br /><strong>No password defined.</strong></div>');
-			return;
+			
+			return false;
 		}
 		
 		/* Fix for JSON - DOMAIN\username needs to have double \ */
@@ -333,12 +340,14 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 		if (typeof name === undefined || !name) {
 			$('#infobox').html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="label label-danger">Error</span><br /><strong>No repository name defined.</strong></div>');
 			$('#wizard').modal('hide');
+			
 			return false;
 		}
 		
 		if (typeof path === undefined || !path) {
 			$('#infobox').html('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><span class="label label-danger">Error</span><br /><strong>No repository path defined.</strong></div>');
 			$('#wizard').modal('hide');
+			
 			return false;
 		}
 		

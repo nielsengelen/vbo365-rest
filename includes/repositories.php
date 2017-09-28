@@ -111,7 +111,6 @@ $('#wizard').on('hidden.bs.modal', function (e) {
 					<option value="Year10">10 years</option>
 					<option value="Year25">25 years</option>
 					<option value="KeepForever">Keep forever</option>
-					<option value="repoxdays">Specificied number of days</option>
 				  </select>
 				  <label>Apply retention policy:</label><br />
 				  <input type="radio" id="repo-dailyretentionperiod" name="repo-retentionperiod" value="Daily"> Daily at
