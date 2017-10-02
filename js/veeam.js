@@ -1,3 +1,7 @@
+/**
+ * General Javascript file for action handling
+ */
+
 $(document).ready(function(e) {
 	/* Login form content */
 	$('#login-content').backstretch([

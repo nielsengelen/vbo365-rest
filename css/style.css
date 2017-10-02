@@ -1,3 +1,7 @@
+/**
+ * General CSS file
+ */
+
 /* Globals */
 body {
   font: 13px/19px  Arial, Helvetica, sans-serif;
@@ -287,7 +291,7 @@ div#login-content {
   border-color: #de615e;
 }
 
-/***** Media queries *****/
+/* Media queries */
 @media (min-width: 992px) and (max-width: 1199px) {}
 @media (min-width: 768px) and (max-width: 991px) {}
 

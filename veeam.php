@@ -1,4 +1,8 @@
 <?php
+/**
+ * Action handler
+ */
+
 require_once('config.php');
 require_once('veeam.class.php');
 

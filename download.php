@@ -1,4 +1,8 @@
 <?php
+/**
+ * Download page for both MSG & PST files
+ */
+
 if (isset($_GET['file'])) { 
 	$file = $_GET['file'];
 	$type = $_GET['type'];

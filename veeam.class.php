@@ -13,15 +13,19 @@ class VBO {
   private $token;
 
   /**
-   * @param $uri
-   * @param $method
-   * @param $user
-   * @param $pass
+   * @param $host
+   * @param $port
    */
   public function __construct($host, $port) {
 	$this->client = new GuzzleHttp\Client(['base_uri' => 'https://'.$host.':'.$port]);
   }
 
+  /**
+   * @param $id
+   * @param $json
+   *
+   * @return string
+   */
   public function changeJobState($id, $json) {
 	try {
 		$response = $this->client->request('POST', '/v1/Jobs/'.$id.'/action', [
@@ -50,6 +54,12 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   * @param $json
+   *
+   * @return string
+   */
   public function createJob($id, $json) {
 	try {
 		$response = $this->client->request('POST', '/v1/Organizations/'.$id.'/Jobs', [
@@ -78,6 +88,11 @@ class VBO {
     }
   }
 
+  /**
+   * @param $json
+   *
+   * @return string
+   */
   public function createOrganization($json) {
 	try {
 		$response = $this->client->request('POST', '/v1/Organizations', [
@@ -105,7 +120,12 @@ class VBO {
 		}
     }
   }
-    
+  
+  /**
+   * @param $json
+   *
+   * @return string
+   */
   public function createProxy($json) {
 	try {
 		$response = $this->client->request('POST', '/v1/Proxies', [
@@ -134,6 +154,11 @@ class VBO {
     }
   }
 
+  /**
+   * @param $json
+   *
+   * @return string
+   */
   public function createRepository($json) {
 	try {
 		$response = $this->client->request('POST', '/v1/BackupRepositories', [
@@ -162,6 +187,11 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function endSession($id) {
 	try {
 		$response = $this->client->request('POST', '/v1/RestoreSessions/'.$id.'/action', [
@@ -192,6 +222,14 @@ class VBO {
     }
   }
   
+  /**
+   * @param $mid
+   * @param $rid
+   * @param $iid
+   * @param $json
+   *
+   * @return file:string
+   */
   public function exportItem($mid, $rid, $iid, $json) {
 	$tmpFile  = sys_get_temp_dir() . '/' . $iid;
 	$resource = fopen($tmpFile, 'w');
@@ -230,6 +268,9 @@ class VBO {
     }
   }
   
+  /**
+   * @return string
+   */
   public function getBackupRepositories() {
 	try {
 		$response = $this->client->request('GET', '/v1/BackupRepositories/', [
@@ -263,6 +304,11 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function getBackupRepository($id) {
 	try {
 		$response = $this->client->request('GET', '/v1/Proxies/'.$id.'/repositories', [
@@ -292,6 +338,12 @@ class VBO {
     }
   }
   
+  /**
+   * @param $rid
+   * @param $mid
+   *
+   * @return string
+   */
   public function getItems($rid, $mid) {
 	try {
 		$response = $this->client->request('GET', '/v1/RestoreSessions/'.$rid.'/organization/mailboxes/'.$mid.'/items', [
@@ -321,6 +373,11 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id = NULL
+   *
+   * @return string
+   */
   public function getJobs($id = NULL) {
 	if ($id) {
 		$call = '/v1/Organizations/'.$id.'/Jobs';
@@ -360,6 +417,12 @@ class VBO {
     }
   }
   
+  /**
+   * @param $rid
+   * @param $mid
+   *
+   * @return string
+   */
   public function getFolders($rid, $mid) {
 	  try {
 		$response = $this->client->request('GET', '/v1/RestoreSessions/'.$rid.'/organization/mailboxes/'.$mid.'/Folders', [
@@ -394,6 +457,11 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function getMailbox($id) {
 	  try {
 		$response = $this->client->request('GET', '/v1/RestoreSessions/'.$id.'/organization/mailboxes', [
@@ -428,6 +496,9 @@ class VBO {
     }
   }
   
+  /**
+   * @return string
+   */
   public function getOrganizations() {
 	try {
 		$response = $this->client->request('GET', '/v1/Organizations', [
@@ -461,6 +532,11 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function getOrganizationJob($id) {
 	try {
 		$response = $this->client->request('GET', '/v1/Organizations/'.$id.'/Jobs', [
@@ -489,6 +565,11 @@ class VBO {
     }
   }
 
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function getOrganizationMailboxes($id) {
 	  try {
 		$response = $this->client->request('GET', '/v1/Organizations/'.$id.'/mailboxes', [
@@ -551,10 +632,18 @@ class VBO {
     }
   }
   
+  /**
+   * @return string
+   */
   public function getRefreshToken() {
 	  return($this->refreshtoken);
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function getSelectedMailboxes($id) {
 	try {
 		$response = $this->client->request('GET', '/v1/Jobs/'.$id.'/SelectedMailboxes', [
@@ -583,6 +672,9 @@ class VBO {
     }
   }
   
+  /**
+   * @return string
+   */
   public function getSessions() {
 	try {
 		$response = $this->client->request('GET', '/v1/RestoreSessions', [
@@ -616,10 +708,19 @@ class VBO {
     }
   }
   
+  /**
+   * @return string
+   */
   public function getToken() {
 	  return($this->token);
   }
   
+  /**
+   * @param $user
+   * @param $pass
+   *
+   * @return string
+   */
   public function login($user, $pass) {
 	try {
 		$response = $this->client->request('POST', '/v1/token', [
@@ -657,12 +758,20 @@ class VBO {
     }
   }
   
+  /**
+   * @return header
+   */
   public function logout() {
 	unset($_SESSION);
 	session_destroy();
 	header("Refresh:0");
   }
   
+  /**
+   * @param $refreshToken
+   *
+   * @return string
+   */
   public function refreshToken($refreshtoken) {
 	try {
 		$response = $this->client->request('POST', '/v1/token', [
@@ -699,6 +808,14 @@ class VBO {
     }
   }
   
+  /**
+   * @param $mid
+   * @param $rid
+   * @param $iid
+   * @param $json
+   *
+   * @return string
+   */
   public function restoreItem($mid, $rid, $iid, $json) {
 	try {
 		$response = $this->client->request('POST', '/v1/RestoreSessions/'.$rid.'/organization/mailboxes/'.$mid.'/items/'.$iid.'/action', [
@@ -742,6 +859,11 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function removeJob($id) {
 	try {
 		$response = $this->client->delete('/v1/Jobs/'.$id, [
@@ -774,6 +896,11 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function removeOrganization($id) {
 	try {
 		$response = $this->client->delete('/v1/Organizations/'.$id, [
@@ -807,6 +934,11 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function removeProxy($id) {
 	try {
 		$response = $this->client->delete('/v1/Proxies/'.$id, [
@@ -840,6 +972,11 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function removeRepo($id) {
 	try {
 		$response = $this->client->delete('/v1/BackupRepositories/'.$id, [
@@ -873,10 +1010,20 @@ class VBO {
     }
   }
   
+  /**
+   * @param $token
+   *
+   * @return string
+   */
   public function setToken($token) {
 	  $this->token = $token;
   }
   
+  /**
+   * @param $id
+   *
+   * @return string
+   */
   public function startJob($id) {
 	try {
 		$response = $this->client->request('POST', '/v1/Jobs/'.$id.'/Action', [
@@ -910,6 +1057,9 @@ class VBO {
     }
   }
   
+  /**
+   * @return string
+   */
   public function startSession() {
 	try {
 		$response = $this->client->request('POST', '/v1/RestoreSessions/action', [
@@ -945,6 +1095,12 @@ class VBO {
     }
   }
   
+  /**
+   * @param $id
+   * @param $json
+   *
+   * @return string
+   */
   public function vexSessionHandler($id, $json) {
 	try {
 		$response = $this->client->request('POST', '/v1/Organizations/'.$id.'/action', [

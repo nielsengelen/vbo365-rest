@@ -1,3 +1,11 @@
+/**
+ * Modal wizard handler for
+ * Jobs
+ * Organizations
+ * Proxies
+ * Repositories
+ */
+
 $(document).on('click', '#btn-create-wizard', function(e) {
 	var action = $(this).data('call');
 	

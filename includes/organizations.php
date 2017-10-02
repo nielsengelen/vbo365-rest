@@ -1,4 +1,8 @@
 <?php
+/**
+ * Organizations page HTML design
+ */
+
 define('AJAX_REQUEST', isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
 if (!AJAX_REQUEST) { 
 	header('Location: ../index.php'); 
