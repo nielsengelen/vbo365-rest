@@ -1,6 +1,6 @@
 {
-    "name": "veeam/rest-api-demo-vbo365",
-    "description": "Veeam RESTful Demo VBO365",
+    "name": "veeam/vbo365-rest",
+    "description": "Veeam Backup for Office 365 RESTful API demo",
     "authors": [
         {
             "name": "Niels Engelen",
