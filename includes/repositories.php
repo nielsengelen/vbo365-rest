@@ -1,8 +1,4 @@
 <?php
-/**
- * Repositories page HTML design
- */
-
 define('AJAX_REQUEST', isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
 if (!AJAX_REQUEST) { 
 	header('Location: ../index.php'); 
@@ -29,7 +25,6 @@ if (count($repos) != '0') {
 	echo '<thead>';
 	echo '<tr>';
 	echo '<th>Name</th>';
-	echo '<th>Host</th>';
 	echo '<th>Capacity</th>';
 	echo '<th>Description</th>';
 	echo '<th>Options</th>';
@@ -39,7 +34,6 @@ if (count($repos) != '0') {
 	for ($i = 0; $i < count($repos); $i++) {
 		echo '<tr>';
 		echo '<td>' . $repos[$i]['name'] . '</td>';
-		echo '<td>' . $repos[$i]['hostName'] . '</td>';
 		echo '<td>' . round($repos[$i]['capacity']/1024/1024/1024, 1) . ' GB (' . round($repos[$i]['freeSpace']/1024/1024/1024, 1)  . ' GB free)</td>';
 		echo '<td>' . $repos[$i]['description'] . '</td>';
 		echo '<td><button class="btn btn-danger" id="btn-delete" data-call="removerepo" data-rcall="repositories" data-name="' . $repos[$i]['name'] . '" data-cid="' . $repos[$i]['id'] . '" title="Delete repository"><i class="fa fa-trash-o" aria-hidden="true"></i></button></a></td>';	

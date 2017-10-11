@@ -1,22 +1,18 @@
 <?php
-/**
- * Download page for both MSG & PST files
- */
-
 if (isset($_GET['file'])) { 
-	$file = $_GET['file'];
+	$path_parts = pathinfo($_GET['file']);
+	$file_name  = $path_parts['basename'];
+	$file = sys_get_temp_dir() . '/' . $file_name;
+	$file_size  = filesize($file);
 	$type = $_GET['type'];
-	
-	header('Pragma: public');
-	header('Expires: 0');
-	header('Content-Encoding: UTF-8');
-	header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-	header('Content-type: application/vnd.ms-outlook;charset=UTF-8'); 
-	header('Content-Type: application/force-download');
+
+	header('Pragma: public'); /* Needed for IE6 */
+	header('Cache-Control: must-revalidate, post-check=0, pre-check=0'); /* Needed for IE6 */
+	header('Expires: -1');
+	header('Content-Disposition: attachment; filename="' . $file_name . '.' . $type . '"');
+	header('Content-Length: ' . $file_size);
+	header('Content-Type: application/vnd.ms-outlook;charset=UTF-8'); 
 	header('Content-Type: application/octet-stream');
-	header('Content-Type: application/download');
-	header('Content-Transfer-Encoding: binary ');
-	header('Content-Disposition: attachment; filename="' . basename($file) . '.' . $type . '"');
 	
 	readfile($file);
 } else {
