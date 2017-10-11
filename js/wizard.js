@@ -1,11 +1,3 @@
-/**
- * Modal wizard handler for
- * Jobs
- * Organizations
- * Proxies
- * Repositories
- */
-
 $(document).on('click', '#btn-create-wizard', function(e) {
 	var action = $(this).data('call');
 	
@@ -140,9 +132,7 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 				backdrop: true,
 			});
 			
-			$.get('veeam.php', {'action' : 'getjobs'}, function(data) {
-				$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-			});
+			$('#content').load('includes/jobs.php');
 		});
 		
 		$('#wizard').modal('hide');
@@ -245,9 +235,7 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 				backdrop: true,
 			});
 			
-			$.get('veeam.php', {'action' : 'getorganizations'}, function(data) {
-				$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-			});
+			$('#content').load('includes/organizations.php');
 		});
 		
 		$('#wizard').modal('hide');
@@ -304,9 +292,7 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 				backdrop: true,
 			});
 			
-			$.get('veeam.php', {'action' : 'getproxies'}, function(data) {
-				$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-			});
+			$('#content').load('includes/proxies.php');
 		});
 		
 		$('#wizard').modal('hide');
@@ -391,9 +377,7 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 				backdrop: true,
 			});
 			
-			$.get('veeam.php', {'action' : 'getrepositories'}, function(data) {
-				$('#content').html('<h1>Veeam Backup for Office 365 RESTful API demo</h1>' + data)
-			});
+			$('#content').load('includes/repositories.php');
 		});
 		
 		$('#wizard').modal('hide');
