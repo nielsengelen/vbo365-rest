@@ -101,13 +101,13 @@ $('#wizard').on('hidden.bs.modal', function (e) {
 			   <div class="well">
 				  <label for="repo-retention">Retention policy for mailbox items:</label>
 				  <select class="form-control" id="repo-retention">
-					<option value="Year1" selected>1 year</option>
-					<option value="Year2">2 years</option>
-					<option value="Year3">3 years</option>
-					<option value="Year5">5 years</option>
-					<option value="Year7">7 years</option>
-					<option value="Year10">10 years</option>
-					<option value="Year25">25 years</option>
+					<option value="Year1">1 year</option>
+					<option value="Years2">2 years</option>
+					<option value="Years3">3 years</option>
+					<option value="Years5">5 years</option>
+					<option value="Years7">7 years</option>
+					<option value="Years10">10 years</option>
+					<option value="Years25">25 years</option>
 					<option value="KeepForever">Keep forever</option>
 				  </select>
 				  <label>Apply retention policy:</label><br />

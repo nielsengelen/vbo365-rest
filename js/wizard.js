@@ -309,7 +309,7 @@ $(document).on('click', '#btn-create-wizard', function(e) {
 		var proxyname = proxyinfo[0];
 		var proxyid = proxyinfo[1];
 		
-		var retention = $('#repo-retention').val();
+		var retention = $('#repo-retention option:selected').val();
 		var retentionperiod = $('input:radio[name=repo-retentionperiod]:checked').val();
 		
 		var dailyHour = $('#repo-dailyHour').val();
