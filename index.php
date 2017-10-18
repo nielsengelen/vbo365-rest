@@ -222,7 +222,7 @@ if (isset($_SESSION['token'])) {
 							if ($login == '400') {
 								echo '<div class="alert alert-error alert-dismissible alert-login" role="alert">';
 								echo '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
-								echo 'Incorrect Username or Password!';
+								echo 'Incorrect Username or password!';
 								echo '</div>';								
 							}
 							?>
