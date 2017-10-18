@@ -4,6 +4,8 @@ Veeam Backup for Office 365
 Veeam Backup for Office 365 RESTful API demo
 
 ## Dependencies
+Required to have a webserver running with PHP5 or higher. As an example you can use the following [Ubuntu guide](https://www.linode.com/docs/web-servers/lamp/install-lamp-stack-on-ubuntu-16-04).
+
 Make sure you download dependencies using `composer`. This project relies on [GuzzleHTTP](https://github.com/guzzle/guzzle), [jQuery](https://jquery.com/), [Twitter Bootstrap](http://getbootstrap.com/) and [Bootbox.js](http://bootboxjs.com/).
 
 ## Installation
