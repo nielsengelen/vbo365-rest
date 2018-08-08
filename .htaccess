@@ -1,0 +1,23 @@
+RewriteEngine On
+
+# Rewrite rules
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^index/?$ index.php [NC,L]
+
+# Exchange
+RewriteRule ^exchange/?$ exchange.php [NC,L]
+RewriteRule ^exchange/([^/]+)/?$ exchange.php?oid=$1 [L,QSA]
+RewriteRule ^exchange/([^/]+)/([^/]+)/?$ exchange.php?oid=$1&uid=$2 [L,QSA]
+
+# OneDrive
+RewriteRule ^onedrive/?$ onedrive.php [NC,L]
+RewriteRule ^onedrive/([^/]+)/?$ onedrive.php?oid=$1 [L,QSA]
+RewriteRule ^onedrive/([^/]+)/([^/]+)/?$ onedrive.php?oid=$1&uid=$2 [L,QSA]
+
+# SharePoint
+RewriteRule ^sharepoint/?$ sharepoint.php [NC,L]
+RewriteRule ^sharepoint/([^/]+)/?$ sharepoint.php?oid=$1 [L,QSA]
+RewriteRule ^sharepoint/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2 [L,QSA]
+RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3 [L,QSA]
+RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3&type=$4 [L,QSA]

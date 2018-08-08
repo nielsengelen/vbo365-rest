@@ -1,0 +1,123 @@
+#main {
+  background: #fcfeff;
+  color: #000000;
+  height: 100%;
+  left: 210px;
+  overflow: auto;
+  padding-bottom: 30px;
+  padding-left: 30px;
+  padding-right: 30px;
+  padding-top: 30px;
+  right: 0;
+  overflow: auto;
+  position: fixed;
+  top: 50px;
+  z-index: 4;
+}
+
+#sidebar {
+  background: #222;
+  height: 100%;
+  left: 0;
+  overflow: auto;
+  position: fixed;
+  top: 50px;
+  width: 210px;
+  z-index: 5;
+}
+#sidebar,
+#sidebar a {
+  color: #ABB4BE;
+}
+#sidebar .logo-container {
+  cursor: pointer;
+  font-weight: 100;
+  font-size: 30px;
+  line-height: 30px;
+  margin: 20px 0 0 0;
+  text-align: center;
+}
+#sidebar .logo-container .logo {
+  border: 2px solid #61C7B3;
+  border-radius: 100px;
+  color: #4CAF50;
+  font-size: 25px;
+  position: relative;
+  padding: 10px;
+  text-indent: 1px;
+  }
+#sidebar .menu-segment {
+  padding-left: 5px;
+  text-align: center;
+  word-wrap: break-word;
+}
+#sidebar .menu-segment ul,
+#sidebar .menu-segment li {
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+#sidebar .menu-segment li a {
+  display: block;
+  margin: 0;
+  padding: 10px 10px 10px 10px;
+}
+#sidebar .menu-segment li.active a,
+#sidebar .menu-segment li.active a:hover {
+  background: #282d36;
+}
+#sidebar .menu-segment li a:hover {
+  background: #21262d;
+}
+#sidebar .separator {
+  background: #2D3138;
+  height: 1px;
+  margin: 10px 15px;
+}
+#sidebar .bottom-padding {
+  height: 100px;
+}
+
+/* Caret style */
+.caret {
+  position: relative;
+}
+
+/* Dropdown style */
+.dropdown.open .caret:before,
+.dropdown.open .caret:after {
+  border-color: transparent;
+  border-style: solid;
+  border-width: 7px 8px;
+  display: block;
+  content: '';
+  height: 0;
+  position: absolute;
+  width: 0;
+  z-index: 1001;
+}
+.dropdown.open .caret:before {
+  border-bottom-color: #ccc;
+  bottom: -17px;
+  right: -8px;
+}
+.dropdown.open .caret:after {
+    border-bottom-color: #fff;
+bottom: -18px;
+  right: -8px;
+}
+
+.infobox {
+  width: 99%;
+}
+.sharepoint-container {
+  display: table;
+  float: left;
+  margin-bottom: 100px;
+  margin-left: 5px;
+  overflow: auto;
+  width: 100%;
+}
+.sharepoint-container table {
+  width: 100%;
+}

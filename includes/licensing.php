@@ -10,28 +10,27 @@ $veeam->setToken($_SESSION['token']);
 $org = $veeam->getOrganizations();
 ?>
 <div class="main-container">
-    <h1>Organizations overview</h1>
+    <h1>Licensing overview</h1>
     <?php
     if (count($org) != '0') {
     ?>
     <table class="table table-bordered table-padding table-striped" id="table-organizations">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Region</th>
-                <th>First backup</th>
-                <th>Last backup</th>
+                <th>Organization</th>
+                <th>Licenses used</th>
+                <th>Licenses exceeded</th>
             </tr>
         </thead>
         <tbody> 
         <?php
         for ($i = 0; $i < count($org); $i++) {
+            $license = $veeam->getLicenseInfo($org[$i]['id']);
         ?>
             <tr>
                 <td><?php echo $org[$i]['name']; ?></td>
-                <td><?php echo $org[$i]['region']; ?></td>
-                <td><?php echo (isset($org[$i]['firstBackuptime']) ? date('d/m/Y H:i T', strtotime($org[$i]['firstBackuptime'])) : 'N/A'); ?></td>
-                <td><?php echo (isset($org[$i]['lastBackuptime']) ? date('d/m/Y H:i T', strtotime($org[$i]['lastBackuptime'])) : 'N/A'); ?></td>
+                <td><?php echo $license['licensedUsers']; ?></td>
+                <td><?php echo $license['newUsers']; ?></td>
             </tr>
         <?php
         }
