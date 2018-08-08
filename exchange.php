@@ -292,7 +292,7 @@ if (isset($_SESSION['token'])) {
                             <td class="text-center">
                             <?php 
                             if ($items['results'][$i]['itemClass'] != 'IPM.Appointment') {
-                                echo date('d M Y H:i', strtotime($items['results'][$i]['received']));
+                                echo date('d/m/Y H:i', strtotime($items['results'][$i]['received']));
                             }
                             ?>
                             </td>

@@ -240,7 +240,7 @@ if (isset($_SESSION['token'])) {
                             if ((strcmp(strtolower($jobsession[$j]['status']), 'success') === 0) || (strcmp(strtolower($jobsession[$j]['status']), 'warning') === 0)) {
                                 echo '<tr>';
                                 echo '<td>' . (isset($jobsession[$j]['creationTime']) ? date('d/m/Y H:i', strtotime($jobsession[$j]['creationTime'])) : 'N/A') . '</td>';
-                                echo '<td><span class="label label-' . strtolower($jobsession[$j]['status']) . '">' . $jobsession[$j]['status'] . '</span></td>';                                    
+                                echo '<td><span class="label label-' . strtolower($jobsession[$j]['status']) . '">' . $jobsession[$j]['status'] . '</span></td>';
                                 echo '<td class="text-center"><span id="span-item-sharepoint-' . $jobs[$i]['id'] . '"><button class="btn btn-default btn-secondary btn-start-sharepoint-restore" title="Start Restore" data-jid="' . $jobs[$i]['id'] . '" data-oid="' . $oid . '" data-pit="' . date('Y.m.d H:i:s', strtotime($jobsession[$j]['creationTime'])) . '" data-type="vesp">Start Restore</button></span></td>';
                                 echo '</tr>';
                             }
