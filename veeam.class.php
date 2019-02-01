@@ -1259,7 +1259,7 @@ class VBO {
         $result = json_decode($response->getBody(), true);
 
         if ($response->getStatusCode() === 200) {
-            if ($result['restoredItemsCount'] == '1') {
+            if ($result['restoredItemsCount'] >= '1') {
                 echo 'Item has been restored.';
             } else {
                 echo 'Failed to restore the item.';
