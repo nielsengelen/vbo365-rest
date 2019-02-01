@@ -173,11 +173,11 @@ if (isset($_SESSION['token'])) {
         if (isset($rid)) {
             if (strcmp($_SESSION['rtype'], 'veod') !== 0) {
                 if (strcmp($_SESSION['rtype'], 'vesp') === 0) {
-                    echo '<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Found a restore session running for SharePoint, <br />please terminate that one first if you want to restore Exchange items.</strong></div>';
+                    echo '<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Found a restore session running for SharePoint, <br />please terminate that one first if you want to restore OneDrive items.</strong></div>';
 
                     echo '<a href="sharepoint">Go to running session</a>';
                 } else {
-                    echo '<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Found a restore session running for Exchange, <br />please terminate that one first if you want to restore Exchange items.</strong></div>';
+                    echo '<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Found a restore session running for Exchange, <br />please terminate that one first if you want to restore OneDrive items.</strong></div>';
 
                     echo '<a href="exchange">Go to running session</a>';
                 }
