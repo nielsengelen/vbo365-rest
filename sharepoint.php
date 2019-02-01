@@ -181,7 +181,7 @@ if (isset($_SESSION['token'])) {
                         }
                     }
                 } else {
-                   echo 'Found another session running, <br />please terminate that one first if you want to restore Exchange items.';
+                   echo 'Found another session running, <br />please terminate that one first if you want to restore SharePoint items.';
                 }
             }
             ?>
@@ -195,11 +195,11 @@ if (isset($_SESSION['token'])) {
         if (isset($rid)) {
             if (strcmp($_SESSION['rtype'], 'vesp') !== 0) {
                 if (strcmp($_SESSION['rtype'], 'vex') === 0) {
-                    echo '<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Found a restore session running for Exchange, <br />please terminate that one first if you want to restore Exchange items.</strong></div>';
+                    echo '<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Found a restore session running for Exchange, <br />please terminate that one first if you want to restore SharePoint items.</strong></div>';
 
                     echo '<a href="exchange">Go to running session</a>';
                 } else {
-                    echo '<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Found a restore session running for OneDrive, <br />please terminate that one first if you want to restore Exchange items.</strong></div>';
+                    echo '<div class="alert alert-danger alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button><strong>Found a restore session running for OneDrive, <br />please terminate that one first if you want to restore SharePoint items.</strong></div>';
 
                     echo '<a href="onedrive">Go to running session</a>';
                 }
