@@ -1,6 +1,9 @@
 <?php
+/* Action handler page for jQuery Calls */
 require_once('config.php');
 require_once('veeam.class.php');
+
+session_start();
 
 if (isset($_GET['action'])) { $action = $_GET['action']; }
 if (isset($_GET['json'])) { $json = $_GET['json']; }
@@ -16,12 +19,10 @@ if (isset($_GET['rid'])) { $rid = $_GET['rid']; }
 if (isset($_GET['siteid'])) { $siteid = $_GET['siteid']; }
 if (isset($_GET['userid'])) { $userid = $_GET['userid']; }
 
-session_start();
-
-$veeam = new VBO($host, $port);
+$veeam = new VBO($host, $port, $version);
 $veeam->setToken($_SESSION['token']);
 
-/* Jobs calls */
+/* Jobs Calls */
 if ($action == 'createjob') {
     $veeam->createJob($id, $json);
 }
@@ -36,15 +37,11 @@ if ($action == 'getjobsession') {
     $getjobsession = $veeam->getJobSession($id);
     echo json_encode($getjobsession);
 }
-if ($action == 'removejob') {
-    $veeam->removeJob($id);
-}
 if ($action == 'startjob') {
     $veeam->startJob($id);
 }
 
-
-/* Organizations calls */
+/* Organizations Calls */
 if ($action == 'createorganization') {
     $veeam->createOrganization($json);
 }
@@ -52,21 +49,13 @@ if ($action == 'getorganizations') {
     $org = $veeam->getOrganizations();
     echo json_encode($org);
 }
-if ($action == 'removeorganization') {
-    $veeam->removeOrganization($id);
-}
 
-
-/* Proxies calls */
+/* Proxies Calls */
 if ($action == 'createproxy') {
     $veeam->createProxy($json);
 }
-if ($action == 'removeproxy') {
-    $veeam->removeProxy($id);
-}
 
-
-/* Repositories calls */
+/* Repositories Calls */
 if ($action == 'createrepository') {
     $veeam->createRepository($json);
 }
@@ -74,12 +63,8 @@ if ($action == 'getrepo') {
     $repo = $veeam->getBackupRepository($id);
     echo json_encode($repo);
 }
-if ($action == 'removerepo') {
-    $veeam->removeRepo($id);
-}
 
-
-/* Session calls */
+/* Sessions Calls */
 if ($action == 'getsessionlog') {
     $log = $veeam->getSessionLog($id);
     echo json_encode($log);
@@ -88,43 +73,68 @@ if ($action == 'getsessions') {
     $log = $veeam->getSessions($offset);
     echo json_encode($log);
 }
+if ($action == 'getbackupsessionlog') {
+	$log = $veeam->getBackupSessionLog($id);
+	echo json_encode($log);
+}
+if ($action == 'getbackupsessions') {
+	$log = $veeam->getBackupSessions();
+	echo json_encode($log);
+}
+if ($action == 'getrestoresessionevents') {
+	$log = $veeam->getRestoreSessionEvents($id);
+	echo json_encode($log);
+}
+if ($action == 'getrestoresessions') {
+	$log = $veeam->getRestoreSessions();
+	echo json_encode($log);
+}
 
-
-/* Explorer calls */
-if ($action == 'startexplorer') {
+/* Restore Session Calls */
+if ($action == 'startrestore') {
     if (isset($id) && ($id != "tenant")) {
-        $session = $veeam->startExplorer($json, $id);
+        $session = $veeam->startRestoreSession($json, $id);
     } else {
-        $session = $veeam->startExplorer($json);
+        $session = $veeam->startRestoreSession($json);
     }
     
     $_SESSION['rid'] = $session['id'];
     $_SESSION['rtype'] = strtolower($session['type']);
-    echo $session['id']; /* Get the Restore Session ID */
+    echo $session['id']; /* Return the Restore Session ID */
 }
-if ($action == 'stopexplorer') {
-    $session = $veeam->stopExplorer($id);
+if ($action == 'stoprestore') {
+    $session = $veeam->stopRestoreSession($id);
     unset($_SESSION['rid']);
     unset($_SESSION['rtype']);
 }
 
-
-/* Exchange calls */
+/* Exchange Calls */
 if ($action == 'getmailitems') {
     $items = $veeam->getMailboxItems($mailboxid, $rid, $folderid, $offset);
     echo json_encode($items);
 }
 
-/* Exchange restore calls */
+/* Exchange Restore Calls */
+if ($action == 'exportmailbox') {
+    $veeam->exportMailbox($mailboxid, $rid, $json);
+}
 if ($action == 'exportmailitem') {
     $veeam->exportMailItem($itemid, $mailboxid, $rid, $json);
 }
-if ($action == 'restoremailoriginal' || $action == 'restoremailto') {
+if ($action == 'exportmultiplemailitems') {
+    $veeam->exportMultipleMailItems($itemid, $mailboxid, $rid, $json);
+}
+if ($action == 'restoremailbox') {
+    $veeam->restoreMailbox($mailboxid, $rid, $json);
+}
+if ($action == 'restoremailitem') {
     $veeam->restoreMailItem($itemid, $mailboxid, $rid, $json);
 }
+if ($action == 'restoremultiplemailitems') {
+    $veeam->restoreMultipleMailItems($mailboxid, $rid, $json);
+}
 
-
-/* OneDrive calls */
+/* OneDrive Calls */
 if ($action == 'getonedriveitems') {
     $items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid, $offset);
     echo json_encode($items);
@@ -138,16 +148,27 @@ if ($action == 'getonedriveparentfolder') {
     echo json_encode($items);
 }
 
-/* OneDrive restore calls */
+/* OneDrive Restore Calls */
+if ($action == 'exportonedrive') {
+    $veeam->exportOneDrive($userid, $rid, $json);
+}
 if ($action == 'exportonedriveitem') {
     $veeam->exportOneDriveItem($itemid, $userid, $rid, $json, $type);
+}
+if ($action == 'exportmultipleonedriveitems') {
+    $veeam->exportMultipleOneDriveItems($itemid, $userid, $rid, $json, $type);
+}
+if ($action == 'restoreonedrive') {
+    $veeam->restoreOneDrive($userid, $rid, $json);
 }
 if ($action == 'restoreonedriveitem') {
     $veeam->restoreOneDriveItem($itemid, $userid, $rid, $json, $type);
 }
+if ($action == 'restoremultipleonedriveitems') {
+    $veeam->restoreMultipleOneDriveItems($userid, $rid, $json);
+}
 
-
-/* SharePoint calls */
+/* SharePoint Calls */
 if ($action == 'getsharepointcontent') {
     $users = $veeam->getSharePointContent($rid, $siteid, $type);
     echo json_encode($users);
@@ -165,11 +186,23 @@ if ($action == 'getsharepointparentfolder') {
     echo json_encode($items);
 }
 
-/* SharePoint restore calls */
+/* SharePoint Restore Calls */
+if ($action == 'exportsharepoint') {
+    $veeam->exportSharePoint($siteid, $rid, $json);
+}
 if ($action == 'exportsharepointitem') {
     $veeam->exportSharePointItem($itemid, $siteid, $rid, $json, $type);
 }
+if ($action == 'exportmultiplesharepointitem') {
+    $veeam->exportMultipleSharePointItem($siteid, $rid, $json);
+}
+if ($action == 'restoresharepoint') {
+    $veeam->restoreSharePoint($siteid, $rid, $json);
+}
 if ($action == 'restoresharepointitem') {
     $veeam->restoreSharePointItem($itemid, $siteid, $rid, $json, $type);
+}
+if ($action == 'restoremultiplesharepointitems') {
+    $veeam->restoreMultipleSharePointItems($siteid, $rid, $json);
 }
 ?>

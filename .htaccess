@@ -1,3 +1,6 @@
+<IfModule mod_rewrite.c>
+SetEnv HTTP_MOD_REWRITE On
+
 RewriteEngine On
 
 # Rewrite rules
@@ -21,3 +24,24 @@ RewriteRule ^sharepoint/([^/]+)/?$ sharepoint.php?oid=$1 [L,QSA]
 RewriteRule ^sharepoint/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2 [L,QSA]
 RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3 [L,QSA]
 RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3&type=$4 [L,QSA]
+
+# Disable directory browsing 
+Options -Indexes
+
+Options +FollowSymLinks
+</IfModule>
+
+<FilesMatch "^\.">
+Order allow,deny
+Deny from all
+</FilesMatch>
+
+<Files readme.md>
+Order allow,deny
+Deny from all
+</Files>
+
+<Files LICENSE>
+Order allow,deny
+Deny from all
+</Files>

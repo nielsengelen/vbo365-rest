@@ -1,6 +1,6 @@
 {
-    "name": "veeam/rest-api-demo-vbo365",
-    "description": "Veeam RESTful Demo VBO365",
+    "name": "veeam/vbo365-self-service-web-portal",
+    "description": "Veeam Backup for Microsoft Office 365 Self-Service Web Portal",
     "authors": [
         {
             "name": "Niels Engelen",
@@ -8,11 +8,10 @@
         }
     ],
     "require": {
-	"guzzlehttp/guzzle": "~6.0",
-	"guzzlehttp/psr7": "~1.0",
+		"guzzlehttp/guzzle": "~6.0",
+		"guzzlehttp/psr7": "~1.0",
         "components/jquery": "3.2",
         "twbs/bootstrap": "3.3.7",
-        "psr/log": "^1.0",
-        "semantic/ui": "^2.3"
+        "psr/log": "^1.0"
     }
 }

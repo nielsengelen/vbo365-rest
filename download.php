@@ -1,10 +1,12 @@
 <?php
+session_start();
+
 function get_mime_type($filename) {
     $idx = explode('.', $filename);
     $count_explode = count($idx);
     $idx = strtolower($idx[$count_explode-1]);
 
-    $mimet = array( 
+    $mimetypes = array( 
         'txt'  => 'text/plain',
         'htm'  => 'text/html',
         'html' => 'text/html',
@@ -62,54 +64,59 @@ function get_mime_type($filename) {
         'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
     );
 
-    if (isset($mimet[$idx])) {
-        return $mimet[$idx];
+    if (isset($mimetypes[$idx])) {
+        return $mimetypes[$idx];
     } else {
         return 'application/octet-stream';
     }
 }
-
-if (isset($_GET['file'])) { 
-    $file =  str_replace('..', '', isset($_GET['file'])?$_GET['file']:'');
-    if (isset($_GET['ext'])) { $ext = $_GET['ext']; }
-    if (isset($_GET['name'])) { $name = $_GET['name']; }
-    $filename = basename($name);
-
-    if ($ext != "plain")
-        $filename .= '.' . $ext;
-
-    if(!is_file($file))
-        exit();
-
-    header('Pragma: public');
-    header('Expires: 0');
-    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-
-    if ($ext == "msg" || $ext == "pst") {
-        header('Content-Encoding: UTF-8');
-        header('Content-Type: application/vnd.ms-outlook;charset=UTF-8'); 
-        header('Content-Type: application/force-download');
-        header('Content-Type: application/octet-stream');
-        header('Content-Type: application/download');
-        header('Content-Transfer-Encoding: binary ');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-    } else {
-        header('Last-Modified: ' . gmdate ('D, d M Y H:i:s', filemtime ($file)).' GMT');
-        header('Cache-Control: private', false);
-        if ($ext == "plain") {
-            $mime = get_mime_type($filename);
-            header('Content-Type: ' . $mime);
-        } else {
-            header('Content-Type: application/zip');
-        }
-        header('Content-Disposition: attachment; filename=" ' . $filename . '"');
-        header('Content-Transfer-Encoding: binary');
-        header('Content-Length: ' . filesize($file));
-        header('Connection: close');
-    }
-
-    readfile($file);
+if (!isset($_SESSION['token'])) { /* Additional check as access is only allowed with a token */
+	header('Location: index.php');
 } else {
-    header('Location: index.php');
+	if (isset($_POST['ext'])) { $ext = $_POST['ext']; }
+	if (isset($_POST['name'])) { $name = $_POST['name']; }
+	if (isset($_POST['file'])) { 
+		$file =  str_replace('..', '', isset($_POST['file'])?$_POST['file']:'');
+		
+		$filename = basename($name);
+
+		/* Check if we have a MSG/PST/ZIP file */
+		if ($ext != "plain")
+			$filename .= '.' . $ext;
+
+		if(!is_file($file))
+			exit();
+
+		header('Pragma: public');
+		header('Expires: 0');
+		header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+
+		if ($ext == "msg" || $ext == "pst") {
+			header('Content-Encoding: UTF-8');
+			header('Content-Type: application/vnd.ms-outlook;charset=UTF-8'); 
+			header('Content-Type: application/octet-stream');
+			header('Content-Transfer-Encoding: binary ');
+			header('Content-Length: ' . filesize($file));
+			header('Content-Disposition: attachment; filename="' . $filename . '"');
+		} else {
+			header('Last-Modified: ' . gmdate ('D, d M Y H:i:s', filemtime ($file)).' GMT');
+			header('Cache-Control: private', false);
+			if ($ext == "plain") {
+				$mime = get_mime_type($filename);
+				header('Content-Type: ' . $mime);
+			} else {
+				header('Content-Type: application/zip');
+			}
+			header('Content-Transfer-Encoding: binary');
+			header('Content-Length: ' . filesize($file));
+			header('Content-Disposition: attachment; filename=" ' . $filename . '"');
+			header('Connection: close');
+		}
+
+		readfile($file);
+		unlink($file);
+	} else {
+		header('Location: index.php');
+	}
 }
 ?>

@@ -2,18 +2,29 @@ $(document).ready(function(e) {
     /* Logout option */
     $('#logout').click(function(e) {
         e.preventDefault();
-        $('.modallogout.modal').modal({
-            centered : true,
-            closable : true,
-            onApprove: function(e) {
-                $.post('index.php', {'logout' : true}, function(data) {
-                    window.location.replace('index.php');
-                });
-            },
-            onDeny   : function(e){
-              return;
-            },
-        }).modal('show');
+		
+		const swalWithBootstrapButtons = Swal.mixin({
+		  confirmButtonClass: 'btn btn-success btn-margin',
+		  cancelButtonClass: 'btn btn-danger',
+		  buttonsStyling: false,
+		})
+		
+		swalWithBootstrapButtons.fire({
+			type: 'question',
+			title: 'Logout',
+			text: 'You are about to logout. Are you sure you want to continue?',
+			showCancelButton: true,
+			confirmButtonText: 'Yes',
+			cancelButtonText: 'No',
+		}).then((result) => {
+			if (result.value) {
+				$.post('index.php', {'logout' : true}, function(data) {
+					window.location.replace('index.php');
+				});
+			  } else {
+				return;
+			}
+		})
     });  
 
     /* Dashboard menu handler */
@@ -24,8 +35,12 @@ $(document).ready(function(e) {
         if (typeof id === undefined || !id) {
             return;
         }
-
-        $('#main').load('includes/' + call + '.php');
+		
+		if (call == 'dashboard') {
+			window.location.replace('index.php');
+		} else {
+			$('#main').load('includes/' + call + '.php');
+		}
     });
 
     /* Panels on admin dashboard */

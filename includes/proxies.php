@@ -4,17 +4,17 @@ require_once('../veeam.class.php');
 
 session_start();
 
-$veeam = new VBO($host, $port);
+$veeam = new VBO($host, $port, $version);
 $veeam->setToken($_SESSION['token']);
 
 $proxies = $veeam->getProxies();
 ?>
 <div class="main-container">
-    <h1>Proxies overview</h1>
+    <h1>Proxies</h1>
     <?php
     if (count($proxies) != '0') {
     ?>
-    <table class="table table-bordered table-padding table-striped" id="table-proxies">
+    <table class="table table-hover table-bordered table-padding table-striped" id="table-proxies">
         <thead>
             <tr>
                 <th>Name</th>

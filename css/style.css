@@ -1,12 +1,21 @@
 body {
-  background: #54B948;
   font: 13px/19px Arial, Helvetica, sans-serif;
+  padding: 0px !important;  
 }
-h1, h2, h3 {
+h1 {
+  min-height: 1rem;
+  font-size: 30px;
+}
+h1, h2, h3, h4, h5 {
   color: #000000;
+  font-family: Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  font-weight: 700;
   margin-left: 20px;
 }
 
+#logout {
+  margin-right: 25px;
+}
 #main {
   background: #fcfeff;
   color: #000000;
@@ -20,7 +29,6 @@ h1, h2, h3 {
   right: 0;
   position: fixed;
   top: 50px;
-  z-index: 4;
 }
 
 #sidebar {
@@ -31,7 +39,6 @@ h1, h2, h3 {
   position: fixed;
   top: 50px;
   width: 210px;
-  z-index: 5;
 }
 #sidebar,
 #sidebar a {
@@ -53,7 +60,7 @@ h1, h2, h3 {
   position: relative;
   padding: 10px;
   text-indent: 1px;
-  }
+}
 #sidebar .menu-segment {
   padding-left: 5px;
   text-align: center;
@@ -89,61 +96,74 @@ h1, h2, h3 {
 }
 
 /* Navigation */
-a.navbar-left {
-  padding-left: 40px;
+.navbar {
+  overflow: hidden!important;
+  margin-bottom:0px !important;
+  position: static;
+}
+.navbar-inner {
+  border-radius: 0px !important;   
+}
+a.navbar-logo {
   width: 210px;
+}
+a.navbar-logo:hover {
+  text-decoration: none;
 }
 img.logo {
   height: 100%;
   width: auto;
 }
-nav.navbar-custom {
-  height: 52px;
+a.navbar-right: {
+  margin-right: 10px;
 }
 textarea.noresize {
   resize: none; 
 }
 
 /* Search Form */
-.search-focus {
+.search {
   background: url("../images/search.png") no-repeat left;
   background-size: 15px;
   background-position: 13px;
   border: 1px solid #ccc;
   border-radius: 50px;
-  height: 20px;
-  margin-left: 30px;
-  margin-right: -30px;
-  padding-left: 50px;
+  height: 35px;
+  margin-bottom: 10px;
+  padding-left: 35px;
   outline: none;
-  transition: all .5s;
-  width: 95%;
 }
-.search-focus:focus {
-  padding-left: 50px;
-}
-.search-hover {
-  background: url("../images/search.png") no-repeat left;
-  background-size: 15px;
-  background-position: 13px;
-  border: 1px solid #ccc;
-  border-radius: 50px;
-  height: 20px;
-  outline: none;
-  padding: 20px;
-  padding-left: 50px;
-  transition: all .5s;
-  width: 95%;
-}
-.search-hover:hover {
-  padding-left: 50px;
+.search:focus {
+  padding-left: 35px;
 }
 
-/* Modal */
-.modal-backdrop {
-  height: 100%;
-  overflow: auto;
-  z-index: -1;
+/* Caret style */
+.caret {
+  position: relative;
+}
+
+/* Dropdown style */
+.dropdown.open .caret:before,
+.dropdown.open .caret:after {
+  border-color: transparent;
+  border-style: solid;
+  border-width: 7px 8px;
+  display: block;
+  content: '';
+  height: 0;
+  position: absolute;
+  width: 0;
+  z-index: 1001;
+}
+.dropdown.open .caret:before {
+  border-bottom-color: #ccc;
+  bottom: -17px;
+  right: -8px;
+}
+.dropdown.open .caret:after {
+  border-bottom-color: #fff;
+  bottom: -18px;
+  right: -8px;
 }
 
 /* Panels */
@@ -207,6 +227,12 @@ textarea.noresize {
   color: #000000;
 }
 
+.bottom-padding {
+  height: 100px;
+}
+.btn-margin {
+  margin-right: 10px;
+}
 .container {
   padding-top: 50px;
   position: fixed;
@@ -219,7 +245,9 @@ textarea.noresize {
   margin-left: 10px;
   margin-top: -38px;
   position: relative;
-  z-index: 2;
+}
+.infobox {
+  width: 99%;
 }
 .load-more-link {
   border-radius: 23px;
@@ -232,37 +260,55 @@ textarea.noresize {
   overflow: auto;
   width: 100%;
 }
+.marginexplore {
+  margin-bottom: 10px;
+}
 .paddingdate {
   margin-left: -10px;
-}
-.pointer {
-  cursor: pointer;
 }
 .select-align {
   margin-top: 10px;
 }
+.swal2-popup {
+  font-size: 1.6rem !important;
+}
 
-.table-padding {
+/* Vertical align modal */
+.modal {
+  text-align: center;
+  padding: 0!important;
+}
+.modal-backdrop {
+  z-index: -1;
+}
+.modal:before {
+  display: inline-block;
+  height: 100%;
+  margin-right: -4px; /* Adjusts for spacing */
+  vertical-align: middle;
+}
+.modal-dialog {
+  display: inline-block;
+  text-align: left;
+  vertical-align: middle;
+}
+
+table.table-border {
+  border: 1px solid #ccc;
+  margin-top: 1px;
+}
+table.table-padding {
   margin: auto !important;
   margin-bottom: 20px;
   padding: 0 !important;
 }
-.table-small {
-  margin-bottom: 0;
+table.table-small {
+  margin-bottom: 20px;
   margin-left: 40px;
+  margin-top: 10px;
   width: 92%;
 }
 .zeroPadding {
   padding: 0 !important;
   background: #ffffff;
-}
-
-.ui.modal,
-.ui.active.modal { 
-  bottom: auto !important;
-  left: auto !important;
-  right: auto !important;
-  top: 20px !important;
-  transform-origin: center !important;
-  transition: all ease .5s;
 }
