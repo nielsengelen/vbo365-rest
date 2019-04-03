@@ -58,19 +58,19 @@ If this doesn't work, modify the original config.php file with your Veeam Backup
 Open a webbrowser and go to index.php. From here you can either login as an admin or a tenant.
 
 You should see the following login screen:
-![Login form](http://foonet.be/img/VBO-Login.png)
+![Login form](http://foonet.be/img/VBOv3-Login.png)
 
 Logged in as an admin:
-![Dashboard](http://foonet.be/img/VBO-Dashboard.png)
+![Dashboard](http://foonet.be/img/VBOv3-Dashboard.png)
 
 Exchange view:
-![Exchange overview](http://foonet.be/img/VBO-Exchange.png)
+![Exchange overview](http://foonet.be/img/VBOv3-Exchange.png)
 
 OneDrive view:
-![OneDrive overview](http://foonet.be/img/VBO-OneDrive.png)
+![OneDrive overview](http://foonet.be/img/VBOv3-OneDrive.png)
 
 SharePoint view:
-![SharePoint overview](http://foonet.be/img/VBO-SharePoint.png)
+![SharePoint overview](http://foonet.be/img/VBOv3-SharePoint.png)
 
 ## About
 This serves as an example on how to work with the RESTful API calls and should be tested before using it in production. Feel free to modify and re-use it however many calls are done with default values which can be modified if needed.
