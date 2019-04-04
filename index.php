@@ -100,13 +100,6 @@ if (isset($_SESSION['token'])) {
 	unset($_SESSION);
     session_destroy();
 ?>
-	<!--<script>
-	Swal.fire({
-		type: 'info',
-		title: 'Session terminated',
-		text: 'Your session has timed out and requires you to login again.'
-	})
-	</script>-->
 	<link rel="stylesheet" href="css/loginform.css" />
 	<div class="container-fluid login-content">
 		<div class="row">
