@@ -1208,7 +1208,7 @@ class VBO {
    */
   public function getMailboxFolders($mid, $rid) {
       try {
-        $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Mailboxes/'.$mid.'/folders', [
+        $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Mailboxes/'.$mid.'/folders?limit=1000', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
                         'Accept'        => 'application/json',
