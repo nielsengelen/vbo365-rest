@@ -38,7 +38,6 @@
 }
 .form-top-right h3 { 
   color: #ffffff;
-  
   margin-top: 0;
 }
 .form-top-right p { 
@@ -133,4 +132,3 @@ button.btn-login:focus {
   opacity: 0.6; 
   outline: 0; 
 }
-button.btn-login:active:focus, button.btn.active:focus { 

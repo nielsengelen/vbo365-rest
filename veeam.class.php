@@ -1208,7 +1208,7 @@ class VBO {
    */
   public function getMailboxFolders($mid, $rid) {
       try {
-        $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Mailboxes/'.$mid.'/folders', [
+        $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Mailboxes/'.$mid.'/folders?limit=1000', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
                         'Accept'        => 'application/json',
@@ -1452,7 +1452,7 @@ class VBO {
             } elseif ($result['skippedItemsCount'] == '1') {
                 echo 'Item has been skipped.';
             } else {
-                echo 'Restore failed: ' . var_dump($result);
+                echo 'Restore failed.';
             }
         } else {
             echo 'Restore failed: ' . $result['message'];
