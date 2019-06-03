@@ -81,7 +81,7 @@ This serves as an example on how to work with the RESTful API calls and should b
 **Note:** There is currently no SSL verification due to self signed certificate testing, please change settings 'verify' to true or remove the specific line accordingly in `veeam.class.php`.
 
 ## Questions and feature request
-Please use the GitHub issue tracker(https://github.com/nielsengelen/vbo365-rest/issues) for any questions or feature requests.
+Please use the [GitHub issue tracker](https://github.com/nielsengelen/vbo365-rest/issues) for any questions or feature requests.
 
 ## Distributed under MIT license
 Copyright (c) 2019 nielsengelen
