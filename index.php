@@ -56,14 +56,7 @@ if (isset($_SESSION['refreshtoken'])) {
     <script src="js/fontawesome.min.js"></script>
     <script src="js/filesize.min.js"></script>
     <script src="js/moment.min.js"></script>
-	<script src="js/sweetalert2.all.min.js"></script>	
-	<?php 
-	if (isset($_SESSION['token'])) {
-	?>
-    <script src="js/veeam.js"></script>
-	<?php
-	}
-	?>
+	<script src="js/sweetalert2.all.min.js"></script>
 </head>
 <body>
 <?php
@@ -72,27 +65,91 @@ if (isset($_SESSION['token'])) {
     $check = filter_var($user, FILTER_VALIDATE_EMAIL);
 
 	if ($check === false && strtolower($administrator) == 'yes') { /* We are an admin */
-		?>
-		<nav class="navbar navbar-inverse navbar-static-top">
-			<ul class="nav navbar-header">
-			  <li><a class="navbar-brand navbar-logo" href="/"><img src="images/logo.svg" alt="Veeam Backup for Microsoft Office 365" class="logo" /></a></li>
+	?>
+	<nav class="navbar navbar-inverse navbar-static-top">
+		<ul class="nav navbar-header">
+		  <li><a class="navbar-brand navbar-logo" href="/"><img src="images/logo.svg" alt="Veeam Backup for Microsoft Office 365" class="logo" /></a></li>
+		</ul>
+		<ul class="nav navbar-nav" id="nav">
+		  <li><a href="exchange">Exchange</a></li>
+		  <li><a href="onedrive">OneDrive</a></li>
+		  <li><a href="sharepoint">SharePoint</a></li>
+		</ul>
+		<ul class="nav navbar-nav navbar-right">
+		  <li><a href="#" onClick="return false;"><span class="fa fa-user"></span> Welcome <i><?php echo $user; ?></i> !</a></li>
+		  <li id="logout"><a href="#" onClick="return false;"><span class="fa fa-sign-out-alt"></span> Logout</a></li>
+		</ul>
+	</nav>
+	<div class="container-fluid">
+		<aside id="sidebar">
+			<div class="logo-container"><i class="logo fa fa-cogs"></i></div>
+			<div class="separator"></div>
+			<menu class="menu-segment">
+			<ul class="menu">
+				<li id="dashboard" data-call="dashboard"><i class="fa fa-tachometer-alt"></i> Dashboard</li>
+				<li id="jobs" data-call="jobs"><i class="fa fa-calendar"></i> Jobs</li>
+				<li id="organizations" data-call="organizations"><i class="fa fa-building"></i> Organizations</li>
+				<li id="proxies" data-call="proxies"><i class="fa fa-server"></i> Proxies</li>
+				<li id="repositories" data-call="repositories"><i class="fa fa-database"></i> Repositories</li>
+				<li id="licensing" data-call="licensing"><i class="fa fa-file-alt"></i> Licensing</li>
+				<li id="activity" data-call="activity"><i class="fa fa-tasks"></i> Activity</li>
 			</ul>
-			<ul class="nav navbar-nav" id="nav">
-			  <li><a href="exchange">Exchange</a></li>
-			  <li><a href="onedrive">OneDrive</a></li>
-			  <li><a href="sharepoint">SharePoint</a></li>
-			</ul>
-			<ul class="nav navbar-nav navbar-right">
-			  <li><a href="#" onClick="return false;"><span class="fa fa-user"></span> Welcome <i><?php echo $user; ?></i> !</a></li>
-			  <li id="logout"><a href="#" onClick="return false;"><span class="fa fa-sign-out-alt"></span> Logout</a></li>
-			</ul>
-		</nav>
-		<div class="container-fluid">
+			</menu>
+			<div class="separator"></div>
+			<div class="bottom-padding"></div>
+		</aside>
+		<main id="main">
 		<?php 
 		include_once('includes/dashboard.php');
 		?>
-		</div>
-		<?php
+		</main>
+	</div>
+	<script>
+	/* Logout option */
+	$('#logout').click(function(e) {
+		e.preventDefault();
+		
+		const swalWithBootstrapButtons = Swal.mixin({
+		  confirmButtonClass: 'btn btn-success btn-margin',
+		  cancelButtonClass: 'btn btn-danger',
+		  buttonsStyling: false,
+		})
+		
+		swalWithBootstrapButtons.fire({
+			type: 'question',
+			title: 'Logout',
+			text: 'You are about to logout. Are you sure you want to continue?',
+			showCancelButton: true,
+			confirmButtonText: 'Yes',
+			cancelButtonText: 'No',
+		}).then((result) => {
+			if (result.value) {
+				$.post('index.php', {'logout' : true}, function(data) {
+					window.location.replace('index.php');
+				});
+			  } else {
+				return;
+			}
+		})
+	});
+
+	/* Dashboard menu handler */
+	$('ul.menu li').click(function(e) {
+		var call = $(this).data('call');
+		var id = this.id;
+
+		if (typeof id === undefined || !id) {
+			return;
+		}
+		
+		if (call == 'dashboard') {
+			window.location.replace('index.php');
+		} else {
+			$('#main').load('includes/' + call + '.php');
+		}
+	});
+	</script>
+	<?php
 	} else { /* We are a tenant */
 		header('Location: /exchange');
 	}
@@ -100,39 +157,36 @@ if (isset($_SESSION['token'])) {
 	unset($_SESSION);
     session_destroy();
 ?>
-	<link rel="stylesheet" href="css/loginform.css" />
-	<div class="container-fluid login-content">
+<section class="login-block">
+	<div class="container login-container">
 		<div class="row">
-			<?php
-			if ($login == 'error') {
-			?>
-			<div class="alert alert-danger">
-				<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-				<strong><i class="fa fa-exclamation-triangle"></i> Error</strong>
-				<p>The username or password provided is incorrect.</p>
+			<div class="col-md-4 login-sec">
+				<h2 class="text-center">Login</h2>
+				<form class="login-form" method="post">
+					<div class="form-group">
+						<label for="username" class="text-uppercase">Username:</label>
+						<input type="text" class="input-loginform form-control" name="user" autofocus /><span class="fa fa-user fa-2x icon"></span>
+					</div>
+					<div class="form-group">
+						<label for="password" class="text-uppercase">Password:</label>
+						<input type="password" class="input-loginform form-control" name="pass" /><span class="fa fa-lock fa-2x icon"></span>
+					</div>
+					<div class="form-check text-center">
+						<button type="submit" class="btn btn-login">Login</button>
+					</div>
+					<div class="text-center">
+					<?php
+					if ($login == 'error') {
+						echo '<br /><p class="text-warning">The username or password provided is incorrect.</p>';
+					}
+					?>
+					</div>
+				</form>
 			</div>
-			<?php
-			}
-			?>
-			<div class="col-sm-6 col-sm-offset-3">
-				<div class="form-top">
-					<div class="form-top-left"><i class="fa fa-lock"></i></div>
-					<div class="form-top-right"><h3><?php echo $title; ?></h3></div>
-				</div>
-				<div class="form-bottom">
-					<form action="" class="form-login" id="login-form" method="post" style="display: block;">
-						<div class="form-group">
-							<input type="text" class="form-user form-control" name="user" placeholder="Username or email" autofocus /><span class="fa fa-user fa-2x icon"></span>
-						</div>
-						<div class="form-group">
-							<input type="password" class="form-pass form-control" name="pass" placeholder="Password" /><span class="fa fa-lock fa-2x icon"></span>
-						</div>
-						<button type="submit" class="btn-login">Login</button><br />
-					</form>
-				</div>
-			</div>
+			<div class="col-md-8 banner-sec"></div>				
 		</div>
 	</div>
+</section>	
 <?php
 }
 ?>

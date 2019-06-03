@@ -233,10 +233,6 @@ textarea.noresize {
 .btn-margin {
   margin-right: 10px;
 }
-.container {
-  padding-top: 50px;
-  position: fixed;
-}
 .errorClass { 
   border: 1px solid red; 
 }
@@ -308,4 +304,83 @@ table.table-small {
 .zeroPadding {
   padding: 0 !important;
   background: #ffffff;
+}
+
+/* Login form */
+.input-loginform {
+  height: 50px;
+  margin: 0;
+  padding: 0 40px;
+  vertical-align: middle;
+  background: #fff;
+  border: 1px solid #000;
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 50px;
+  color: #888;
+  -moz-border-radius: 4px; -webkit-border-radius: 4px; border-radius: 4px;
+  -moz-box-shadow: none; -webkit-box-shadow: none; box-shadow: none;
+  -o-transition: all .3s; -moz-transition: all .3s; -webkit-transition: all .3s; -ms-transition: all .3s; transition: all .3s;
+}
+.input-loginform:focus {
+  outline: 0;
+  background: #fff;
+  border: 2px solid #000;
+  -moz-box-shadow: none; -webkit-box-shadow: none; box-shadow: none;
+}
+.input-loginform:-moz-placeholder { 
+  color: #888; 
+}
+.input-loginform:-ms-input-placeholder {
+  color: #888; 
+}
+.input-loginform::-webkit-input-placeholder {
+  color: #888; 
+}
+
+.login-block {
+  background: #4c6e5e;
+  float: left;
+  width: 100%;
+  height: 100vh;
+  padding: 50px 0;
+}
+.banner-sec {
+  background: url("../images/login.jpg") no-repeat bottom; 
+  background-size: cover; 
+  min-height: 500px; 
+  border-radius: 0 10px 10px 0; 
+  padding: 0;
+}
+.login-container {
+  background: #fff; 
+  border-radius: 10px; 
+  box-shadow: 15px 20px 0px rgba(0,0,0,0.1);
+}
+.login-sec {
+  padding: 50px 30px; 
+  position: relative;
+}
+.login-sec h2 {
+  margin-bottom: 30px; 
+  font-weight: 800; 
+  font-size: 30px; 
+  color: #54b948;
+}
+.login-sec h2:after {
+  content: " "; 
+  width: 100px; 
+  height: 5px;
+  background: #cbeac8;
+  display: block;
+  margin-top: 20px;
+  border-radius: 3px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.btn-login {
+  background: #54b948; 
+  color: #fff;
+  font-weight:600;
 }

@@ -58,7 +58,7 @@ If this doesn't work, modify the original config.php file with your Veeam Backup
 Open a webbrowser and go to index.php. From here you can either login as an admin or a tenant.
 
 You should see the following login screen:
-![Login form](http://foonet.be/img/VBOv3-Login.png)
+![Login form](http://foonet.be/img/VBOv3-NewLogin.png)
 
 Logged in as an admin:
 ![Dashboard view](http://foonet.be/img/VBOv3-Dashboard.png)
