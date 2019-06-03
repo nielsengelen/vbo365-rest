@@ -1,4 +1,4 @@
-Veeam Backup for Microsoft Office 365 Self-Service Web Portal
+Self-Service Web Portal for Veeam Backup for Microsoft Office 365
 ==================
 
 ## About
@@ -26,17 +26,6 @@ It is required to have a webserver running with PHP5 or higher and the mod_rewri
 As an example you can use the following [Linux Ubuntu with Apache guide](https://www.linode.com/docs/web-servers/lamp/install-lamp-stack-on-ubuntu-16-04) or [Windows with IIS guide](https://docs.microsoft.com/en-us/iis/application-frameworks/scenario-build-a-php-website-on-iis/configure-a-php-website-on-iis).
 
 This portal leverages rewrite rules via .htaccess and therefor mod_rewrite needs to be enabled in Apache. More information on this can be found via [Enabling mod_rewrite for Apache running on Linux Ubuntu](https://www.digitalocean.com/community/tutorials/how-to-rewrite-urls-with-mod_rewrite-for-apache-on-ubuntu-16-04).
-
-**Important step**
-
-Disable MultiView within the directory document root for Apache. This can be done my modifying the default site configuration and set it as below:
-```
-<Directory /var/www/html>
-        Options Indexes FollowSymLinks
-        AllowOverride All
-        Require all granted
-</Directory>
-```
 
 For IIS the web.config file is required. More information can be found via [importing the IIS web config](https://docs.microsoft.com/en-us/iis/extensions/url-rewrite-module/creating-rewrite-rules-for-the-url-rewrite-module).
 
@@ -72,16 +61,16 @@ You should see the following login screen:
 ![Login form](http://foonet.be/img/VBOv3-Login.png)
 
 Logged in as an admin:
-![Dashboard](http://foonet.be/img/VBOv3-Dashboard.png)
+![Dashboard view](http://foonet.be/img/VBOv3-Dashboard.png)
 
 Exchange view:
-![Exchange overview](http://foonet.be/img/VBOv3-Exchange.png)
+![Exchange view](http://foonet.be/img/VBOv3-Exchange.png)
 
 OneDrive view:
-![OneDrive overview](http://foonet.be/img/VBOv3-OneDrive.png)
+![OneDrive view](http://foonet.be/img/VBOv3-OneDrive.png)
 
 SharePoint view:
-![SharePoint overview](http://foonet.be/img/VBOv3-SharePoint.png)
+![SharePoint view](http://foonet.be/img/VBOv3-SharePoint.png)
 
 ## About
 This serves as an example on how to work with the RESTful API calls and should be tested before using it in production. Feel free to modify and re-use it however many calls are done with default values which can be modified if needed.
