@@ -764,7 +764,7 @@ $(document).on("click", ".download-file", function(e) {
     var itemname = $(this).data("itemname");
     var siteid = $(this).data("siteid");
     var rid = "<?php echo $rid; ?>";
-	var json = '{ "save" : null }';
+	var json = '{ "save" : { "asZip" : "false" } }';
 
 	$.get("veeam.php", {"action" : "exportsharepointitem", "itemid" : itemid, "siteid" : siteid, "rid" : rid, "json" : json, "type" : filetype}).done(function(data) {
 		e.preventDefault();
