@@ -27,6 +27,17 @@ As an example you can use the following [Linux Ubuntu with Apache guide](https:/
 
 This portal leverages rewrite rules via .htaccess and therefor mod_rewrite needs to be enabled in Apache. More information on this can be found via [Enabling mod_rewrite for Apache running on Linux Ubuntu](https://www.digitalocean.com/community/tutorials/how-to-rewrite-urls-with-mod_rewrite-for-apache-on-ubuntu-16-04).
 
+**Important step**
+
+Disable MultiView within the directory document root for Apache. This can be done my modifying the default site configuration and set it as below:
+```
+<Directory /var/www/html>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+</Directory>
+```
+
 For IIS the web.config file is required. More information can be found via [importing the IIS web config](https://docs.microsoft.com/en-us/iis/extensions/url-rewrite-module/creating-rewrite-rules-for-the-url-rewrite-module).
 
 **It is advised to increase or disable the PHP maximum execution time limit.**
