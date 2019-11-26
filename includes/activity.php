@@ -7,16 +7,8 @@ session_start();
 $veeam = new VBO($host, $port, $version);
 
 if (isset($_SESSION['token'])) {
-    $veeam->setToken($_SESSION['token']);
-} 
-
-if (isset($_SESSION['refreshtoken'])) {
-    $veeam->refreshToken($_SESSION['refreshtoken']);
-}
-
-if (isset($_SESSION['token'])) {
+	$veeam->setToken($_SESSION['token']);
     $user = $_SESSION['user'];
-	
 	$sessions = $veeam->getSessions();
 	$time = array();
 
@@ -119,10 +111,10 @@ if (count($sessions['results']) == '30') {
 
 <script>
 /* Filter activity */
-$("#filter-activity").keyup(function(e) {
+$('#filter-activity').keyup(function(e) {
     var searchText = $(this).val().toLowerCase();
     /* Show only matching row, hide rest of them */
-    $.each($("#table-sessions tbody tr"), function(e) {
+    $.each($('#table-sessions tbody tr'), function(e) {
         if ($(this).text().toLowerCase().indexOf(searchText) === -1) {
            $(this).hide();
         } else {
@@ -132,20 +124,20 @@ $("#filter-activity").keyup(function(e) {
 });
 
 /* Session window */
-$(document).on("click", ".item", function(e) {
+$('.item').click(function(e) {
     var icon, text;
-    var id = $(this).data("sessionid");
+    var id = $(this).data('sessionid');
     
-    $.get("veeam.php", {"action" : "getsessionlog", "id" : id}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getsessionlog', 'id' : id}).done(function(data) {
         response = JSON.parse(data);
 
         $('#table-session-content tbody').empty();
         
         for (var i = 0; i < response.results.length; i++) {
-            if (response.results[i].status == "Success") { /* Success icon */
+            if (response.results[i].status == 'Success') { /* Success icon */
                 icon = 'check-circle';
                 text = 'success';
-            } else if (response.results[i].status == "Warning") { /* Warning icon */
+            } else if (response.results[i].status == 'Warning') { /* Warning icon */
                 icon = 'exclamation-triangle';
                 text = 'warning';
             } else { /* Failed icon */
@@ -164,8 +156,8 @@ $(document).on("click", ".item", function(e) {
 });
 
 /* Load more link */
-$(document).on("click", ".load-more-link", function(e) {
-    var offset = $(this).data("offset");
+$('.load-more-link').click(function(e) {
+    var offset = $(this).data('offset');
 
     loadSessions(offset);
 });
@@ -176,7 +168,7 @@ $(document).on("click", ".load-more-link", function(e) {
 function loadSessions(offset) {
     var result, status;
 
-    $.get("veeam.php", {"action" : "getsessions", "offset" : offset}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getsessions', 'offset' : offset}).done(function(data) {
         var response = JSON.parse(data);
 
         for (var i = 0; i < response.results.length; i++) {
@@ -187,8 +179,13 @@ function loadSessions(offset) {
             } else {
                 status = '<span class="label label-' + result.toLowerCase() + '">' + result + '</span>';
             }
-
-            $('a.load-more-link').data('offset', offset + 30); /* Update offset for loading more items */
+			
+			if (response.results.length < 30) {
+				$('a.load-more-link').addClass('hide');
+			} else {
+				$('a.load-more-link').data('offset', offset + 30); /* Update offset for loading more items */
+			}
+            
             $('#table-sessions tbody').append('<tr> \
                         <td>' + response.results[i].name + '</td> \
                         <td>' + response.results[i].organization + '</td> \
@@ -203,18 +200,25 @@ function loadSessions(offset) {
 </script>
 <?php
 } else {
-    unset($_SESSION);
-    session_destroy();
-	?>
-	<script>
-	Swal.fire({
-		type: 'info',
-		title: 'Session terminated',
-		text: 'Your session has timed out and requires you to login again.'
-	}).then(function(e) {
-		window.location.href = '/index.php';
-	});
-	</script>
-	<?php
+	if (isset($_SESSION['refreshtoken'])) {
+		$veeam->refreshToken($_SESSION['refreshtoken']);
+		
+		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
+        $_SESSION['token'] = $veeam->getToken();
+	} else {
+		unset($_SESSION);
+		session_destroy();
+		?>
+		<script>
+		Swal.fire({
+			type: 'info',
+			title: 'Session expired',
+			text: 'Your session has expired and requires you to login again.'
+		}).then(function(e) {
+			window.location.href = '/index.php';
+		});
+		</script>
+		<?php
+	}
 }
 ?>

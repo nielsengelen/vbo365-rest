@@ -14,7 +14,7 @@ if (count($_POST) != '0') {
 \$host = '".$host."'; /* Veeam Backup for Microsoft Office 365 server (hostname or IP) */
 \$port = '".$port."'; /* RESTful API service port (default: 4443) */
 \$title = '".$title."'; /* Custom title for the portal to be displayed in the browser title */
-\$version = '".$version."'; /* RESTful API version (default: v3) */
+\$version = '".$version."'; /* RESTful API version (default: v4) */
 \$administrator = '".$administrator."'; /* Allow Windows administrator accounts to be used as a login (yes or no) */
 ?>";
 		
@@ -90,7 +90,7 @@ if (isset($success) && $success != 'setup') {
 		<div class="alert alert-danger text-center" role="alert"><strong>Could not write to the config.php file (<?php echo $reason; ?>). Settings have NOT been saved. Copy paste the following within the configuration file.</strong></div>
 		<div class="text-center">
 		<textarea id="textarea" rows="7" cols="150"><?php
-		echo "<?php\n\$host = '$host'; /* Veeam Backup for Microsoft Office 365 server (hostname or IP) */\n\$port = '$port'; /* RESTful API service port (default: 4443) */\n\$title = '$title'; /* Custom title for the portal to be displayed in the browser title */\n\$version = '$version'; /* RESTful API version (default: v3) */\n\$administrator = '$administrator'; /* Allow Windows administrator accounts to be used as a login (yes or no) */\n?>";
+		echo "<?php\n\$host = '$host'; /* Veeam Backup for Microsoft Office 365 server (hostname or IP) */\n\$port = '$port'; /* RESTful API service port (default: 4443) */\n\$title = '$title'; /* Custom title for the portal to be displayed in the browser title */\n\$version = '$version'; /* RESTful API version (default: v4) */\n\$administrator = '$administrator'; /* Allow Windows administrator accounts to be used as a login (yes or no) */\n?>";
 		?></textarea>
 		<br />
 		<button class="btn btn-primary" id="copytoclipboard">Copy to clipboard</button>
@@ -132,8 +132,8 @@ if (isset($success) && $success != 'setup') {
   <label class="col-md-4 control-label" for="version">API Version</label>  
   <div class="col-md-4">
   <select class="form-control input-md" id="version" name="version">
-	<option selected>v3</option>
-	<option>v2</option>
+	<option selected>v4</option>
+	<option>v3</option>
   </select>
   <span class="help-block">RESTful API version to be used</span>
   </div>

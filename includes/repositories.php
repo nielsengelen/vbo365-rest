@@ -7,19 +7,17 @@ session_start();
 $veeam = new VBO($host, $port, $version);
 
 if (isset($_SESSION['token'])) {
-    $veeam->setToken($_SESSION['token']);
-} 
-
-if (isset($_SESSION['refreshtoken'])) {
-    $veeam->refreshToken($_SESSION['refreshtoken']);
-}
-
-if (isset($_SESSION['token'])) {
+	$veeam->setToken($_SESSION['token']);
     $user = $_SESSION['user'];
 	$repos = $veeam->getBackupRepositories();
+	try {
+		$objectrepos = $veeam->getObjectStorageRepositories();
+	} catch (Exception $e) {
+		$e->getMessage();
+	}
 ?>
 <div class="main-container">
-    <h1>Repositories</h1>
+    <h1>Backup Repositories</h1>
     <?php
     if (count($repos) != '0') {
     ?>
@@ -59,48 +57,114 @@ if (isset($_SESSION['token'])) {
         </tbody>
     </table>
     <?php
-		if ($version != 'v2') {
-			for ($i = 0; $i < count($repos); $i++) { /* v3 added Bytes to the parameter */
-			?>
-			<script>
-			var capacity = filesize(<?php echo $repos[$i]['capacityBytes']; ?>, {round: 2});
-			var freespace = filesize(<?php echo $repos[$i]['freeSpaceBytes']; ?>, {round: 2});
-			
-			document.getElementById("size-<?php echo $repos[$i]['id']; ?>").innerHTML = capacity + " (" + freespace + " available)";
-			</script>
-			<?php
-			}
-		} else {
-			for ($i = 0; $i < count($repos); $i++) {
-			?>
-			<script>
-			var capacity = filesize(<?php echo $repos[$i]['capacity']; ?>, {round: 2});
-			var freespace = filesize(<?php echo $repos[$i]['freeSpace']; ?>, {round: 2});
-			
-			document.getElementById("size-<?php echo $repos[$i]['id']; ?>").innerHTML = capacity + " (" + freespace + " available)";
-			</script>
-			<?php
-			}
+		for ($i = 0; $i < count($repos); $i++) { /* v3 added Bytes to the parameter */
+		?>
+		<script>
+		var capacity = filesize(<?php echo $repos[$i]['capacityBytes']; ?>, {round: 1});
+		var freespace = filesize(<?php echo $repos[$i]['freeSpaceBytes']; ?>, {round: 1});
+		
+		document.getElementById('size-<?php echo $repos[$i]['id']; ?>').innerHTML = capacity + ' (' + freespace + ' available)';
+		</script>
+		<?php
 		}
     } else {
         echo '<p>No backup repositories available.</p>';
     }
+	
+	if (isset($objectrepos)) {
+    ?>
+		<h1>Object Storage Repositories</h1>
+		<?php
+		if (count($objectrepos) != '0') {
+		?>
+		<table class="table table-hover table-bordered table-padding table-striped" id="table-proxies">
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Type</th>
+					<th>Capacity</th>
+					<th>Configured Limit</th>
+					<th>Description</th>
+				</tr>
+			</thead>
+			<tbody> 
+			<?php
+			for ($i = 0; $i < count($objectrepos); $i++) {
+			?>
+				<tr>
+					<td><?php echo $objectrepos[$i]['name']; ?></td>
+					<td><?php echo $objectrepos[$i]['type']; ?></td>
+					<td id="size-object-<?php echo $objectrepos[$i]['id']; ?>"></td>
+					<td>
+					<?php 
+					if ($objectrepos[$i]['sizeLimitEnabled']) {
+						echo $objectrepos[$i]['sizeLimitGB'] . ' GB';
+					} else {
+						echo 'Not set';
+					}
+					?>
+					</td>
+					<td><?php echo $objectrepos[$i]['description']; ?></td>
+				</tr>
+			<?php
+			}
+			?>
+			</tbody>
+		</table>
+		<?php
+			for ($i = 0; $i < count($objectrepos); $i++) {
+				if (isset($objectrepos[$i]['usedSpaceGB']) && !isset($objectrepos[$i]['freeSpaceGB'])) {
+					?>
+					<script>
+					var usedspaceobject = filesize(<?php echo $objectrepos[$i]['usedSpaceGB']; ?>, {round: 1});
+					
+					document.getElementById('size-object-<?php echo $objectrepos[$i]['id']; ?>').innerHTML = usedspaceobject + ' used';
+					</script>
+					<?php
+				} else if (isset($objectrepos[$i]['usedSpaceGB']) && isset($objectrepos[$i]['freeSpaceGB'])) {
+					?>
+					<script>
+					var freespaceobject = filesize(<?php echo $objectrepos[$i]['freeSpaceGB']; ?>, {round: 1});
+					var usedspaceobject = filesize(<?php echo $objectrepos[$i]['usedSpaceGB']; ?>, {round: 1});
+					
+					document.getElementById('size-object-<?php echo $objectrepos[$i]['id']; ?>').innerHTML = usedspaceobject + ' used (' + freespaceobject + ' available)';
+					</script>
+					<?php
+				} else {
+					?>
+					<script>
+					document.getElementById('size-object-<?php echo $objectrepos[$i]['id']; ?>').innerHTML = 'N/A';
+					</script>
+					<?php
+				}
+			}
+		} else {
+			echo '<p>No object storage repositories available.</p>';
+		}
+	}
     ?>
 </div>
 <?php
 } else {
-    unset($_SESSION);
-    session_destroy();
-	?>
-	<script>
-	Swal.fire({
-		type: 'info',
-		title: 'Session terminated',
-		text: 'Your session has timed out and requires you to login again.'
-	}).then(function(e) {
-		window.location.href = '/index.php';
-	});
-	</script>
-	<?php
+	if (isset($_SESSION['refreshtoken'])) {
+		$veeam->refreshToken($_SESSION['refreshtoken']);
+		
+		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
+        $_SESSION['token'] = $veeam->getToken();
+	} else {
+		unset($_SESSION);
+		session_destroy();
+		?>
+		<script>
+		Swal.fire({
+			type: 'info',
+			title: 'Session expired',
+			text: 'Your session has expired and requires you to login again.'
+		}).then(function(e) {
+			window.location.href = '/index.php';
+		});
+		</script>
+		<?php
+	}
 }
 ?>

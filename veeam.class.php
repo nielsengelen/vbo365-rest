@@ -1,5 +1,6 @@
 <?php
 require_once('vendor/autoload.php');
+set_time_limit(0);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7;
@@ -156,6 +157,40 @@ class VBO {
   public function getBackupRepositories() {
     try {
         $response = $this->client->request('GET', 'BackupRepositories', [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $this->token,
+                            'Accept'        => 'application/json',
+                        ],
+                        'http_errors' => false,
+                        'verify' => false
+                    ]
+                );
+
+        $result = json_decode($response->getBody(), true);
+
+        if ($response->getStatusCode() === 200) {
+            return($result);
+        } elseif ($response->getStatusCode() === 401) {
+            $this->logout();
+        }
+    } catch (RequestException $e) {
+        if ($e->hasResponse()) {
+            $exception = (string) $e->getResponse()->getBody();
+            $exception = json_decode($exception, true);
+
+            echo 'Error: ' . $exception['message'];
+        } else {
+            echo $e->getMessage();
+        }
+    }
+  }
+  
+  /**
+   * @return $result 
+   */
+  public function getObjectStorageRepositories() {
+    try {
+        $response = $this->client->request('GET', 'ObjectStorageRepositories', [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $this->token,
                             'Accept'        => 'application/json',
@@ -917,6 +952,7 @@ class VBO {
    */
    
   /**
+   * @param $id Restore Session ID
    * @return $result 
    */
   public function getSessionLog($id) {
@@ -951,11 +987,18 @@ class VBO {
   }
 
   /**
+   * @param $offset Session offset
    * @return $result 
    */
   public function getSessions($offset = null) {
+	$call = 'RestoreSessions';
+
+	if (isset($offset)) {
+		$call .= '?offset=' . $offset;
+	}
+		
     try {
-        $response = $this->client->request('GET', 'RestoreSessions', [
+        $response = $this->client->request('GET', $call, [
                         'headers' => [
                             'Authorization' => 'Bearer ' . $this->token,
                             'Accept'        => 'application/json',
@@ -1019,6 +1062,7 @@ class VBO {
   }
 
   /**
+   * @param $id Job Session ID
    * @return $result 
    */
   public function getBackupSessionLog($id) {
@@ -1129,7 +1173,7 @@ class VBO {
    * @return $result 
    */
   public function getMailbox($rid) {
-      try {
+    try {
         $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Mailboxes/?offset=0&limit=1000', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -1170,7 +1214,7 @@ class VBO {
    * @return $result 
    */
   public function getMailboxID($rid, $uid) {
-      try {
+    try {
         $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Mailboxes/'.$uid, [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -1207,7 +1251,7 @@ class VBO {
    * @return $result 
    */
   public function getMailboxFolders($mid, $rid) {
-      try {
+    try {
         $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Mailboxes/'.$mid.'/folders?limit=1000', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -1318,7 +1362,9 @@ class VBO {
         if ($response->getStatusCode() === 200) {
             echo $tmpFile;
         } else {
-			echo 'error';
+			$result = json_decode($response->getBody(), true);
+			
+			echo $result['message'];
         }
     } catch (RequestException $e) {
         if ($e->hasResponse()) {
@@ -1362,7 +1408,9 @@ class VBO {
         if ($response->getStatusCode() === 200) {
             echo $tmpFile;
         } else {
-			echo 'error';
+			$result = json_decode($response->getBody(), true);
+			
+			echo $result['message'];
         }
     } catch (RequestException $e) {
         if ($e->hasResponse()) {
@@ -1406,7 +1454,9 @@ class VBO {
         if ($response->getStatusCode() === 200) {
             echo $tmpFile;
         } else {
-			echo 'error';
+			$result = json_decode($response->getBody(), true);
+			
+			echo $result['message'];
         }
     } catch (RequestException $e) {
         if ($e->hasResponse()) {
@@ -1577,7 +1627,7 @@ class VBO {
    * @return $result 
    */
   public function getOneDrives($rid) {
-      try {
+    try {
         $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/OneDrives?offset=0&limit=1000', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -1618,7 +1668,7 @@ class VBO {
    * @return $result 
    */
   public function getOneDriveID($rid, $uid) {
-      try {
+    try {
         $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/OneDrives/'.$uid, [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -1775,7 +1825,9 @@ class VBO {
         if ($response->getStatusCode() === 200) {
             echo $tmpFile;
         } else {
-            echo $response->getStatusCode();
+			$result = json_decode($response->getBody(), true);
+			
+			echo $result['message'];
         }
     } catch (RequestException $e) {
         if ($e->hasResponse()) {
@@ -1819,7 +1871,9 @@ class VBO {
         if ($response->getStatusCode() === 200) {
             echo $tmpFile;
         } else {
-            echo $response->getStatusCode();
+			$result = json_decode($response->getBody(), true);
+			
+			echo $result['message'];
         }
     } catch (RequestException $e) {
         if ($e->hasResponse()) {
@@ -1864,7 +1918,9 @@ class VBO {
         if ($response->getStatusCode() === 200) {
             echo $tmpFile;
         } else {
-			echo 'error';
+			$result = json_decode($response->getBody(), true);
+			
+			echo $result['message'];
         }
     } catch (RequestException $e) {
         if ($e->hasResponse()) {
@@ -1930,7 +1986,7 @@ class VBO {
    * @return $result
    */
   public function restoreOneDriveItem($iid, $uid, $rid, $json, $type = 'Folders') {
-   try {
+    try {
         $response = $this->client->request('POST', 'RestoreSessions/'.$rid.'/Organization/OneDrives/'.$uid.'/'.$type.'/'.$iid.'/Action', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -1974,7 +2030,7 @@ class VBO {
    * @return $result
    */
   public function restoreMultipleOneDriveItems($uid, $rid, $json, $type = 'Documents') {
-   try {
+    try {
         $response = $this->client->request('POST', 'RestoreSessions/'.$rid.'/Organization/OneDrives/'.$uid.'/'.$type.'/Action', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -2020,7 +2076,7 @@ class VBO {
    * @return $result 
    */
   public function getSharePointSites($rid) {
-      try {
+    try {
         $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Sites?offset=0&limit=1000', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -2058,54 +2114,10 @@ class VBO {
   /**
    * @param $rid Restore Session ID
    * @param $sid SharePoint Site ID
-   * @param $iid Item ID
-   * @param $json JSON format
-   * @param $type Folders (default) or documents
-   * @return $file
-   */
-  public function exportSharePointItem($iid, $sid, $rid, $json, $type = 'Folders') {
-    $tmpFile  = sys_get_temp_dir() . '/' . $iid;
-    $resource = fopen($tmpFile, 'w');
-
-    try {
-        $response = $this->client->request('POST', 'RestoreSessions/'.$rid.'/Organization/Sites/'.$sid.'/'.$type.'/'.$iid.'/Action', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $this->token,
-                        'Accept'        => 'application/octet-stream',
-                        'Content-Type'  => 'application/json'
-                    ],
-                    'verify' => false,
-                    'body' => $json,
-                    'sink' => $resource,
-                ]
-            );
-
-        fclose($resource);
-
-        if ($response->getStatusCode() === 200) {
-            echo $tmpFile;
-        } else {
-            echo $response->getStatusCode();
-        }
-    } catch (RequestException $e) {
-        if ($e->hasResponse()) {
-            $exception = (string) $e->getResponse()->getBody();
-            $exception = json_decode($exception, true);
-
-            echo 'Error: ' . $exception['message'];
-        } else {
-            echo $e->getMessage();
-        }
-    }
-  }
-
-  /**
-   * @param $rid Restore Session ID
-   * @param $sid SharePoint Site ID
    * @return $result 
    */
   public function getSharePointLists($rid, $sid) {
-      try {
+    try {
         $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Sites/'.$sid.'/Lists?offset=0&limit=1000', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -2142,7 +2154,7 @@ class VBO {
    * @return $result 
    */
   public function getSharePointContent($rid, $sid, $type) {
-      try {
+    try {
         $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Sites/'.$sid.'/'.$type, [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -2222,7 +2234,7 @@ class VBO {
    * @return $result 
    */
   public function getSharePointSiteName($rid, $sid) {
-      try {
+    try {
         $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Sites/'.$sid, [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $this->token,
@@ -2286,6 +2298,144 @@ class VBO {
             return($result);
         } elseif ($response->getStatusCode() === 401) {
             $this->logout();
+        }
+    } catch (RequestException $e) {
+        if ($e->hasResponse()) {
+            $exception = (string) $e->getResponse()->getBody();
+            $exception = json_decode($exception, true);
+
+            echo 'Error: ' . $exception['message'];
+        } else {
+            echo $e->getMessage();
+        }
+    }
+  }
+
+  /**
+   * @param $rid Restore Session ID
+   * @param $sid SharePoint Site ID
+   * @param $iid Item ID
+   * @param $json JSON format
+   * @param $type Folders (default) or documents
+   * @return $file
+   */
+  public function exportSharePoint($sid, $rid, $json) {
+    $tmpFile  = sys_get_temp_dir() . '/' . $sid;
+    $resource = fopen($tmpFile, 'w');
+
+    try {
+        $response = $this->client->request('POST', 'RestoreSessions/'.$rid.'/Organization/Sites/'.$sid.'/Action', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->token,
+                        'Accept'        => 'application/octet-stream',
+                        'Content-Type'  => 'application/json'
+                    ],
+                    'verify' => false,
+                    'body' => $json,
+                    'sink' => $resource,
+                ]
+            );
+
+        fclose($resource);
+
+        if ($response->getStatusCode() === 200) {
+            echo $tmpFile;
+        } else {
+			$result = json_decode($response->getBody(), true);
+			
+			echo $result['message'];
+        }
+    } catch (RequestException $e) {
+        if ($e->hasResponse()) {
+            $exception = (string) $e->getResponse()->getBody();
+            $exception = json_decode($exception, true);
+
+            echo 'Error: ' . $exception['message'];
+        } else {
+            echo $e->getMessage();
+        }
+    }
+  }
+
+  /**
+   * @param $rid Restore Session ID
+   * @param $sid SharePoint Site ID
+   * @param $iid Item ID
+   * @param $json JSON format
+   * @param $type Folders (default) or documents
+   * @return $file
+   */
+  public function exportSharePointItem($iid, $sid, $rid, $json, $type = 'Folders') {
+    $tmpFile  = sys_get_temp_dir() . '/' . $iid;
+    $resource = fopen($tmpFile, 'w');
+
+    try {
+        $response = $this->client->request('POST', 'RestoreSessions/'.$rid.'/Organization/Sites/'.$sid.'/'.$type.'/'.$iid.'/Action', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->token,
+                        'Accept'        => 'application/octet-stream',
+                        'Content-Type'  => 'application/json'
+                    ],
+                    'verify' => false,
+                    'body' => $json,
+                    'sink' => $resource,
+                ]
+            );
+
+        fclose($resource);
+
+        if ($response->getStatusCode() === 200) {
+            echo $tmpFile;
+        } else {
+			$result = json_decode($response->getBody(), true);
+			
+			echo $result['message'];
+        }
+    } catch (RequestException $e) {
+        if ($e->hasResponse()) {
+            $exception = (string) $e->getResponse()->getBody();
+            $exception = json_decode($exception, true);
+
+            echo 'Error: ' . $exception['message'];
+        } else {
+            echo $e->getMessage();
+        }
+    }
+  }
+
+  /**
+   * @param $rid Restore Session ID
+   * @param $sid SharePoint Site ID
+   * @param $iid Item ID
+   * @param $json JSON format
+   * @param $type Folders (default) or documents
+   * @return $file
+   */
+  public function exportMultipleSharePointItems($iid, $sid, $rid, $json, $type = 'Documents') {
+    $tmpFile  = sys_get_temp_dir() . '/' . $iid;
+    $resource = fopen($tmpFile, 'w');
+
+    try {
+        $response = $this->client->request('POST', 'RestoreSessions/'.$rid.'/Organization/Sites/'.$sid.'/'.$type.'/Action', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->token,
+                        'Accept'        => 'application/octet-stream',
+                        'Content-Type'  => 'application/json'
+                    ],
+                    'verify' => false,
+                    'body' => $json,
+                    'sink' => $resource,
+                ]
+            );
+
+        fclose($resource);
+
+        if ($response->getStatusCode() === 200) {
+            echo $tmpFile;
+        } else {
+			$result = json_decode($response->getBody(), true);
+			
+			echo $result['message'];
         }
     } catch (RequestException $e) {
         if ($e->hasResponse()) {
@@ -2437,7 +2587,6 @@ class VBO {
             echo $e->getMessage();
         }
     }
-  }
-  
+  } 
 }
 ?>

@@ -7,14 +7,7 @@ session_start();
 $veeam = new VBO($host, $port, $version);
 
 if (isset($_SESSION['token'])) {
-    $veeam->setToken($_SESSION['token']);
-} 
-
-if (isset($_SESSION['refreshtoken'])) {
-    $veeam->refreshToken($_SESSION['refreshtoken']);
-}
-
-if (isset($_SESSION['token'])) {
+	$veeam->setToken($_SESSION['token']);	
     $user = $_SESSION['user'];
 	$org = $veeam->getOrganizations();
 ?>
@@ -33,7 +26,6 @@ if (isset($_SESSION['token'])) {
 				<?php
 				if ($version != 'v2') {
 				?>
-				<th>Backup size</th>
 				<th class="text-center">Licensed users</th>
 				<?php
 				}
@@ -49,14 +41,7 @@ if (isset($_SESSION['token'])) {
                 <td><?php echo $org[$i]['region']; ?></td>
                 <td><?php echo (isset($org[$i]['firstBackuptime']) ? date('d/m/Y H:i T', strtotime($org[$i]['firstBackuptime'])) : 'N/A'); ?></td>
                 <td><?php echo (isset($org[$i]['lastBackuptime']) ? date('d/m/Y H:i T', strtotime($org[$i]['lastBackuptime'])) : 'N/A'); ?></td>
-				<?php
-				if ($version != 'v2') {
-				?>
-				<td id="size-<?php echo $org[$i]['id']; ?>"></td>
 				<td class="pointer text-center" data-toggle="collapse" data-target="#licensedUsers<?php echo $i; ?>"><a href="#" onClick="return false;">View</a></td>
-				<?php
-				}
-				?>
             </tr>
 			<?php
 			if ($version != 'v2') {
@@ -100,18 +85,6 @@ if (isset($_SESSION['token'])) {
         </tbody>
     </table>
 	<?php
-		if ($version != 'v2') {
-			for ($i = 0; $i < count($org); $i++) {
-				$repo = $veeam->getOrganizationRepository($org[$i]['id']);
-			?>
-				<script>
-				var usedspace = filesize(<?php echo $repo[0]['usedSpaceBytes']; ?>, {round: 2});
-				
-				document.getElementById("size-<?php echo $org[$i]['id']; ?>").innerHTML = usedspace;
-				</script>
-			<?php
-			}
-		}
     } else {
         echo '<p>No organizations have been added.</p>';
     }
@@ -119,18 +92,25 @@ if (isset($_SESSION['token'])) {
 </div>
 <?php
 } else {
-    unset($_SESSION);
-    session_destroy();
-	?>
-	<script>
-	Swal.fire({
-		type: 'info',
-		title: 'Session terminated',
-		text: 'Your session has timed out and requires you to login again.'
-	}).then(function(e) {
-		window.location.href = '/index.php';
-	});
-	</script>
-	<?php
+	if (isset($_SESSION['refreshtoken'])) {
+		$veeam->refreshToken($_SESSION['refreshtoken']);
+		
+		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
+        $_SESSION['token'] = $veeam->getToken();
+	} else {
+		unset($_SESSION);
+		session_destroy();
+		?>
+		<script>
+		Swal.fire({
+			type: 'info',
+			title: 'Session expired',
+			text: 'Your session has expired and requires you to login again.'
+		}).then(function(e) {
+			window.location.href = '/index.php';
+		});
+		</script>
+		<?php
+	}
 }
 ?>

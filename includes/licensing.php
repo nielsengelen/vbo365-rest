@@ -7,14 +7,7 @@ session_start();
 $veeam = new VBO($host, $port, $version);
 
 if (isset($_SESSION['token'])) {
-    $veeam->setToken($_SESSION['token']);
-} 
-
-if (isset($_SESSION['refreshtoken'])) {
-    $veeam->refreshToken($_SESSION['refreshtoken']);
-}
-
-if (isset($_SESSION['token'])) {
+	$veeam->setToken($_SESSION['token']);	
     $user = $_SESSION['user'];
 	$org = $veeam->getOrganizations();
 ?>
@@ -172,18 +165,25 @@ if (isset($_SESSION['token'])) {
 </div>
 <?php
 } else {
-    unset($_SESSION);
-    session_destroy();
-	?>
-	<script>
-	Swal.fire({
-		type: 'info',
-		title: 'Session terminated',
-		text: 'Your session has timed out and requires you to login again.'
-	}).then(function(e) {
-		window.location.href = '/index.php';
-	});
-	</script>
-	<?php
+	if (isset($_SESSION['refreshtoken'])) {
+		$veeam->refreshToken($_SESSION['refreshtoken']);
+		
+		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
+        $_SESSION['token'] = $veeam->getToken();
+	} else {
+		unset($_SESSION);
+		session_destroy();
+		?>
+		<script>
+		Swal.fire({
+			type: 'info',
+			title: 'Session expired',
+			text: 'Your session has expired and requires you to login again.'
+		}).then(function(e) {
+			window.location.href = '/index.php';
+		});
+		</script>
+		<?php
+	}
 }
 ?>

@@ -5,9 +5,10 @@ require_once('../veeam.class.php');
 session_start();
 
 $veeam = new VBO($host, $port, $version);
-$veeam->setToken($_SESSION['token']);
 
-$proxies = $veeam->getProxies();
+if (isset($_SESSION['token'])) {
+	$veeam->setToken($_SESSION['token']);
+	$proxies = $veeam->getProxies();
 ?>
 <div class="main-container">
     <h1>Proxies</h1>
@@ -52,3 +53,27 @@ $proxies = $veeam->getProxies();
     }
     ?>
 </div>
+<?php
+} else {
+	if (isset($_SESSION['refreshtoken'])) {
+		$veeam->refreshToken($_SESSION['refreshtoken']);
+		
+		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
+        $_SESSION['token'] = $veeam->getToken();
+	} else {
+		unset($_SESSION);
+		session_destroy();
+		?>
+		<script>
+		Swal.fire({
+			type: 'info',
+			title: 'Session expired',
+			text: 'Your session has expired and requires you to login again.'
+		}).then(function(e) {
+			window.location.href = '/index.php';
+		});
+		</script>
+		<?php
+	}
+}
+?>

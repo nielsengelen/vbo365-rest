@@ -1,5 +1,6 @@
 <?php
 error_reporting(E_ALL || E_STRICT);
+set_time_limit(0);
 
 require_once('config.php');
 require_once('veeam.class.php');
@@ -10,8 +11,8 @@ if (empty($host) || empty($port) || empty($version)) {
     exit('Please modify the configuration file first and configure the Veeam Backup for Microsoft Office 365 host, port and RESTful API version settings.');
 }
 
-if ($version != 'v2' && $version != 'v3') {
-	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Supported versions are either v2 or v3. v1 is not supported.');
+if (!preg_match('/v[3-4]/', $version)) {
+	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 3 and 4 are supported.');
 }
 
 $veeam = new VBO($host, $port, $version);

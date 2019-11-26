@@ -1,4 +1,5 @@
 <?php
+set_time_limit(0);
 session_start();
 
 function get_mime_type($filename) {
@@ -81,7 +82,7 @@ if (!isset($_SESSION['token'])) { /* Additional check as access is only allowed 
 		$filename = basename($name);
 
 		/* Check if we have a MSG/PST/ZIP file */
-		if ($ext != "plain")
+		if ($ext != 'plain')
 			$filename .= '.' . $ext;
 
 		if(!is_file($file))
@@ -91,7 +92,7 @@ if (!isset($_SESSION['token'])) { /* Additional check as access is only allowed 
 		header('Expires: 0');
 		header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
 
-		if ($ext == "msg" || $ext == "pst") {
+		if ($ext == 'msg' || $ext == 'pst') {
 			header('Content-Encoding: UTF-8');
 			header('Content-Type: application/vnd.ms-outlook;charset=UTF-8'); 
 			header('Content-Type: application/octet-stream');

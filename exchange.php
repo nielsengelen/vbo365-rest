@@ -1,5 +1,6 @@
 <?php
 error_reporting(E_ALL || E_STRICT);
+set_time_limit(0);
 
 require_once('config.php');
 require_once('veeam.class.php');
@@ -10,18 +11,14 @@ if (empty($host) || empty($port) || empty($version)) {
     exit('Please modify the configuration file first and configure the Veeam Backup for Microsoft Office 365 host, port and RESTful API version settings.');
 }
 
-if ($version != 'v2' && $version != 'v3') {
-	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Supported versions are either v2 or v3. v1 is not supported.');
+if (!preg_match('/v[3-4]/', $version)) {
+	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 3 and 4 are supported.');
 }
 
 $veeam = new VBO($host, $port, $version);
 
 if (isset($_SESSION['token'])) {
     $veeam->setToken($_SESSION['token']);
-}
-
-if (isset($_SESSION['refreshtoken'])) {
-    $veeam->refreshToken($_SESSION['refreshtoken']);
 }
 ?>
 <!DOCTYPE html>
@@ -189,51 +186,46 @@ if (isset($_SESSION['token'])) {
 		if (!isset($_SESSION['rid'])) { /* No restore session is running */
 			if (isset($oid) && !empty($oid)) { /* We got an organization ID so list all users and their state */
 				$org = $veeam->getOrganizationByID($oid);
-		
-				if ($version == 'v2') { /* This requires is a live query thus slower */
-					$users = $veeam->getOrganizationUsers($oid);
-				} else {
-					$users = $veeam->getLicensedUsers($oid);
-					$repo = $veeam->getOrganizationRepository($oid);
-					$usersarray = array();
+				$users = $veeam->getLicensedUsers($oid);
+				$repo = $veeam->getOrganizationRepository($oid);
+				$usersarray = array();
+				
+				for ($i = 0; $i < count($users['results']); $i++) {
+					array_push($usersarray, array(
+						'id' => $users['results'][$i]['id'],
+						'isBackedUp' => $users['results'][$i]['isBackedUp'],
+						'lastBackupDate' => $users['results'][$i]['lastBackupDate']
+					));
+				}
+
+				if (count($users['results']) != '0') { /* Gather the backed up users from the repositories related to the organization */
+					$repousersarray = array(); /* Array used to sort the users in case of double data on the repositories */
 					
-					for ($i = 0; $i < count($users['results']); $i++) {
-						array_push($usersarray, array(
-							'id' => $users['results'][$i]['id'],
-							'isBackedUp' => $users['results'][$i]['isBackedUp'],
-							'lastBackupDate' => $users['results'][$i]['lastBackupDate']
-						));
-					}
+					for ($i = 0; $i < count($repo); $i++) {
+						$id = explode('/', $repo[$i]['_links']['backupRepository']['href']); /* Get the organization ID */
+						$repoid = end($id);
 
-					if (count($users['results']) != '0') { /* Gather the backed up users from the repositories related to the organization */
-						$repousersarray = array(); /* Array used to sort the users in case of double data on the repositories */
-						
-						for ($i = 0; $i < count($repo); $i++) {
-							$id = explode('/', $repo[$i]['_links']['backupRepository']['href']); /* Get the organization ID */
-							$repoid = end($id);
-
-							for ($j = 0; $j < count($users['results']); $j++) {
-								$combinedid = $users['results'][$j]['backedUpOrganizationId'] . $users['results'][$j]['id'];
-								$userdata = $veeam->getUserData($repoid, $combinedid);
-								
-								/* Only store data when the Mailbox or Archive data is backed up */
-								if (!is_null($userdata) && ($userdata['isMailboxBackedUp'] || $userdata['isArchiveBackedUp'])) {
-									array_push($repousersarray, array(
-											'id' => $userdata['accountId'], 
-											'email' => $userdata['email'],
-											'name' => $userdata['displayName'],
-											'isMailboxBackedUp' => $userdata['isMailboxBackedUp'],
-											'isArchiveBackedUp' => $userdata['isArchiveBackedUp']
-									));
-								}
+						for ($j = 0; $j < count($users['results']); $j++) {
+							$combinedid = $users['results'][$j]['backedUpOrganizationId'] . $users['results'][$j]['id'];
+							$userdata = $veeam->getUserData($repoid, $combinedid);
+							
+							/* Only store data when the Mailbox or Archive data is backed up */
+							if (!is_null($userdata) && ($userdata['isMailboxBackedUp'] || $userdata['isArchiveBackedUp'])) {
+								array_push($repousersarray, array(
+										'id' => $userdata['accountId'], 
+										'email' => $userdata['email'],
+										'name' => $userdata['displayName'],
+										'isMailboxBackedUp' => $userdata['isMailboxBackedUp'],
+										'isArchiveBackedUp' => $userdata['isArchiveBackedUp']
+								));
 							}
 						}
-						
-						$usersort = array_values(array_column($repousersarray , null, 'name')); /* Sort the array and make sure every value is unique */
 					}
+					
+					$usersort = array_values(array_column($repousersarray , null, 'name')); /* Sort the array and make sure every value is unique */
 				}
 				
-				if (($version == 'v2' && count($users['results']) != '0') || (count($usersort) != '0')) {
+				if (count($usersort) != '0') {
 				?>
 				<div class="row">
 				<div class="col-sm-2 text-left marginexplore">
@@ -262,81 +254,47 @@ if (isset($_SESSION['token'])) {
 				</div>
 				<?php
 				}
-			
-				/* v2 shows all accounts with their backup status */
-				if ($version == 'v2') {
-					if (count($users['results']) != '0') {
-						?>
-						<div class="alert alert-info">The following is an overview on all accounts within the organization with their backup status.</div>
-						<table class="table table-bordered table-padding table-striped">
-							<thead>
-								<tr>
-									<th>Account</th>
-									<th>Backed up</th>
-								</tr>
-							</thead>
-							<tbody>
-						<?php
-						for ($i = 0; $i < count($users['results']); $i++) {
-							echo '<tr>';
-							echo '<td>' . $users['results'][$i]['name'] . '</td>';
-							echo '<td>'; 
-							if ($users['results'][$i]['isBackedUp'] == 'true') { 
-								echo '<span class="label label-success">Yes</span>'; 
-							} else { 
-								echo '<span class="label label-danger">No</span>';
-							}
-							echo '</td>';
-							echo '</tr>';
-						}
-						?>
-							</tbody>
-						</table>
+				
+				if (count($usersort) != '0') {
+				?>
+				<div class="alert alert-info">The following is an overview on all backed up accounts and their objects within the organization.</div>
+				<table class="table table-bordered table-padding table-striped">
+					<thead>
+						<tr>
+							<th>Account</th>
+							<th>Objects in backup</th>
+							<th>Last backup</th>
+						</tr>
+					</thead>
+					<tbody>
 					<?php
-					} else { /* No users available for the organization ID */
-						echo '<p>No users found for this organization.</p>';
+					for ($i = 0; $i < count($usersort); $i++) {
+						$licinfo = array_search($usersort[$i]['id'], array_column($usersarray, 'id')); /* Get the last backup date for this specific account */
+						echo '<tr>';
+						echo '<td>' . $usersort[$i]['name'] . ' (' . $usersort[$i]['email'] . ')</td>';
+						echo '<td>';
+						if ($usersort[$i]['isMailboxBackedUp']) {
+							echo '<i class="far fa-envelope fa-2x" style="color:green" title="Mailbox"></i> ';
+						} else {
+							echo '<i class="far fa-envelope fa-2x" style="color:red" title="Mailbox"></i> ';
+						}
+						if ($usersort[$i]['isArchiveBackedUp']) {
+							echo '<i class="fa fa-archive fa-2x" style="color:green" title="Archive"></i> ';
+						} else {
+							echo '<i class="fa fa-archive fa-2x" style="color:red" title="Archive"></i> ';
+						}
+						echo '</td>';
+						echo '<td>' . date('d/m/Y H:i T', strtotime($usersarray[$licinfo]['lastBackupDate'])) . '</td>';
+						echo '</tr>';
 					}
-				} else { /* v3 (or higher) shows accounts by backed up objects  */
-					if (count($usersort) != '0') {
-						?>
-						<div class="alert alert-info">The following is an overview on all backed up accounts and their objects within the organization.</div>
-						<table class="table table-bordered table-padding table-striped">
-							<thead>
-								<tr>
-									<th>Account</th>
-									<th>Objects in backup</th>
-									<th>Last backup</th>
-								</tr>
-							</thead>
-							<tbody>
-					<?php
-						for ($i = 0; $i < count($usersort); $i++) {
-							$licinfo = array_search($usersort[$i]['id'], array_column($usersarray, 'id')); /* Get the last backup date for this specific account */
-							echo '<tr>';
-							echo '<td>' . $usersort[$i]['name'] . ' (' . $usersort[$i]['email'] . ')</td>';
-							echo '<td>';
-							if ($usersort[$i]['isMailboxBackedUp']) {
-								echo '<i class="far fa-envelope fa-2x" style="color:green" title="Mailbox"></i> ';
-							} else {
-								echo '<i class="far fa-envelope fa-2x" style="color:red" title="Mailbox"></i> ';
-							}
-							if ($usersort[$i]['isArchiveBackedUp']) {
-								echo '<i class="fa fa-archive fa-2x" style="color:green" title="Archive"></i> ';
-							} else {
-								echo '<i class="fa fa-archive fa-2x" style="color:red" title="Archive"></i> ';
-							}
-							echo '</td>';
-							echo '<td>' . date('d/m/Y H:i T', strtotime($usersarray[$licinfo]['lastBackupDate'])) . '</td>';
-							echo '</tr>';
-						}
 					?>
-							</tbody>
-						</table>
-					<?php
-					} else { /* No users available for the organization ID */
-						echo '<p>No users found for this organization.</p>';
-					}
+					</tbody>
+				</table>
+				<?php
+				} else { /* No users available for the organization ID */
+					echo '<p>No users found for this organization.</p>';
 				}
+				
 			} else { /* No organization has been selected */
 				if ($check === false && strtolower($administrator) == 'yes') { /* Admin */
 					echo '<p>Select an organization to start a restore session.</p>';
@@ -475,23 +433,23 @@ if (isset($_SESSION['token'])) {
 				
 						foreach ($mailboxes as $key => $value) {
 						?>
-							<tr>
-								<td><a href="exchange/<?php echo $org['id']; ?>/<?php echo $value['id']; ?>"><?php echo $value['name']; ?></a></td>
-								<td><?php echo $value['email']; ?></td>
-								<td class="text-center">
-									<div class="btn-group dropdown"> <!-- Full restore dropdown -->
-										<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button>
-										<ul class="dropdown-menu dropdown-menu-right">
-										  <li class="dropdown-header">Download as</li>
-										  <li><a class="dropdown-link download-pst" data-itemid="<?php echo $value['name']; ?>" data-mailsubject="<?php echo $value['name']; ?>" data-mailboxid="<?php echo $value['id']; ?>" data-type="full" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> PST file</a></li>
-										  <li class="divider"></li>
-										  <li class="dropdown-header">Restore to</li>
-										  <li><a class="dropdown-link restore-original" data-itemid="<?php echo $value['name']; ?>" data-mailboxid="<?php echo $value['id']; ?>" data-type="full" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
-										  <li><a class="dropdown-link restore-different" data-itemid="<?php echo $value['name']; ?>" data-mailboxid="<?php echo $value['id']; ?>" data-type="full" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Different location</a></li>
-										</ul>
-									</div>
-								</td>
-							</tr>
+						<tr>
+							<td><a href="exchange/<?php echo $org['id']; ?>/<?php echo $value['id']; ?>"><?php echo $value['name']; ?></a></td>
+							<td><?php echo $value['email']; ?></td>
+							<td class="text-center">
+								<div class="btn-group dropdown"> <!-- Full restore dropdown -->
+									<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button>
+									<ul class="dropdown-menu dropdown-menu-right">
+									  <li class="dropdown-header">Download as</li>
+									  <li><a class="dropdown-link download-pst" data-itemid="<?php echo $value['name']; ?>" data-mailsubject="<?php echo $value['name']; ?>" data-mailboxid="<?php echo $value['id']; ?>" data-type="full" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> PST file</a></li>
+									  <li class="divider"></li>
+									  <li class="dropdown-header">Restore to</li>
+									  <li><a class="dropdown-link restore-original" data-itemid="<?php echo $value['name']; ?>" data-mailboxid="<?php echo $value['id']; ?>" data-type="full" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
+									  <li><a class="dropdown-link restore-different" data-itemid="<?php echo $value['name']; ?>" data-mailboxid="<?php echo $value['id']; ?>" data-type="full" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Different location</a></li>
+									</ul>
+								</div>
+							</td>
+						</tr>
 						<?php
 						}
 						?>
@@ -535,7 +493,7 @@ $('#logout').click(function(e) {
 });
 
 /* Exchange Restore Buttons */
-$(document).on('click', '.btn-start-restore', function(e) {
+$('.btn-start-restore').click(function(e) {
     if (typeof $(this).data('jid') !== 'undefined') {
         var jid = $(this).data('jid'); /* Job ID */
     }
@@ -594,8 +552,8 @@ $(document).on('click', '.btn-start-restore', function(e) {
         }
     });
 });
-$(document).on('click', '.btn-stop-restore', function(e) {
-    var rid = "<?php echo $rid; ?>"; /* Restore Session ID */
+$('.btn-stop-restore').click(function(e) {
+    var rid = '<?php echo $rid; ?>'; /* Restore Session ID */
 
     e.preventDefault();
 
@@ -633,23 +591,24 @@ $(document).on('click', '.btn-stop-restore', function(e) {
 if (isset($rid)) {
 ?>
 /* Dropdown settings for restore buttons */
-$(document).on("hide.bs.dropdown", ".dropdown", function(e) {
-    $(e.target).find(">.dropdown-menu:first").slideUp();
+$('hide.bs.dropdown').dropdown(function(e) {
+    $(e.target).find('>.dropdown-menu:first').slideUp();
 });
-$(document).on("show.bs.dropdown", ".dropdown", function(e) {
-    $(e.target).find(">.dropdown-menu:first").slideDown();
+$('show.bs.dropdown').dropdown(function(e) {
+    $(e.target).find('>.dropdown-menu:first').slideDown();
 });
 
 /* Select all checkbox */
-$(document).on("click", "#chk-all", function(e) {
-    var table = $(e.target).closest("table");
-    $("tr:visible :checkbox", table).prop("checked", this.checked);
+$('#chk-all').click(function(e) {
+    var table = $(e.target).closest('table');
+    $('tr:visible :checkbox', table).prop('checked', this.checked);
 });
+
 /* Item search */
-$("#search-mailbox").keyup(function(e) {
+$('#search-mailbox').keyup(function(e) {
     var searchText = $(this).val().toLowerCase();
     /* Show only matching row, hide rest of them */
-    $.each($("#table-exchange-items tbody tr"), function(e) {
+    $.each($('#table-exchange-items tbody tr'), function(e) {
         if ($(this).text().toLowerCase().indexOf(searchText) === -1) {
            $(this).hide();
         } else {
@@ -659,42 +618,51 @@ $("#search-mailbox").keyup(function(e) {
 });
 
 /* Users and folder navigation content */
-$("#inbox-nav").change(function(e) {
-    var folderid = $("#inbox-nav option:selected").data("folderid");
-    var mailboxid = $("#inbox-nav option:selected").data("mailboxid");
+$('#inbox-nav').change(function(e) {
+    var folderid = $('#inbox-nav option:selected').data('folderid');
+    var mailboxid = $('#inbox-nav option:selected').data('mailboxid');
     var offset = 0;
-    var rid = "<?php echo $rid; ?>";
+    var rid = '<?php echo $rid; ?>'; /* Restore Session ID */
 
-    loadMessages(folderid, mailboxid, rid, offset, "1");
+    loadMessages(folderid, mailboxid, rid, offset, '1');
 });
-$(document).on("click", "ul#ul-exchange-users li", function(e) {
-    $(this).parent().find("li.active").removeClass("active");
-    $(this).addClass("active");
+$('ul#ul-exchange-users li').click(function(e) {
+    $(this).parent().find('li.active').removeClass('active');
+    $(this).addClass('active');
 });
 
 /* Load more link for e-mail content */
-$(document).on("click", ".load-more-link", function(e) {
-    var folderid = $(this).data("folderid");
-    var mailboxid = $(this).data("mailboxid");
-    var offset = $(this).data("offset");
-    var rid = "<?php echo $rid; ?>";
+$('.load-more-link').click(function(e) {
+    var folderid = $(this).data('folderid');
+    var mailboxid = $(this).data('mailboxid');
+    var offset = $(this).data('offset');
+    var rid = '<?php echo $rid; ?>'; /* Restore Session ID */
     
     loadMessages(folderid, mailboxid, rid, offset);
 });
 
 /* Export and restore options for restore buttons based upon specific action per button */
 /* Export to MSG file */
-$(document).on("click", ".download-msg", function(e) {
-    var itemid = $(this).data("itemid");
-    var mailboxid = $(this).data("mailboxid");
-    var rid = "<?php echo $rid; ?>";
+$('.download-msg').click(function(e) {
+    var itemid = $(this).data('itemid');
+    var mailboxid = $(this).data('mailboxid');
+    var rid = '<?php echo $rid; ?>'; /* Restore Session ID */
     var json = '{ "savetoMsg": null }';
-    var mailsubject = $(this).data("mailsubject");
+    var mailsubject = $(this).data('mailsubject');
+	
+	Swal.fire({
+		type: 'info',
+		title: 'Download is starting',
+		text: 'Download will start soon.'
+	})
         
-	$.get("veeam.php", {"action" : "exportmailitem", "itemid" : itemid, "mailboxid" : mailboxid, "rid" : rid, "json" : json}).done(function(data) {
+	$.get('veeam.php', {'action': 'exportmailitem', 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
 		e.preventDefault();
+		
 		if (data) {
-			$.redirect("download.php", {ext : "msg", file : data, name : mailsubject}, "POST");
+			$.redirect('download.php', {ext : 'msg', file : data, name : mailsubject}, 'POST');
+			
+			Swal.close();
 		} else {
 			Swal.fire({
 				type: 'error',
@@ -705,24 +673,34 @@ $(document).on("click", ".download-msg", function(e) {
 		}
 	});
 });
+
 /* Export to PST file */
-$(document).on("click", ".download-pst", function(e) {
-	var itemid = $(this).data("itemid");
-    var mailboxid = $(this).data("mailboxid");
-    var rid = "<?php echo $rid; ?>";	
-	var type = $(this).data("type");
+$('.download-pst').click(function(e) {
+	var itemid = $(this).data('itemid');
+    var mailboxid = $(this).data('mailboxid');
+    var rid = '<?php echo $rid; ?>'; /* Restore Session ID */
+	var type = $(this).data('type');
 	
-	if (type == "multiple") { /* Multiple items export */
+	Swal.fire({
+		type: 'info',
+		title: 'Download is starting',
+		text: 'Export in progress and your download will start soon...'
+	})
+	
+	if (type == 'multiple') { /* Multiple items export */
 		var act = 'exportmultiplemailitems';
 		var ids = '';
-		var mailsubject = 'exported-mailitems-' + $(this).data("mailsubject"); /* exported-mailitems-username */  
+		var mailsubject = 'exported-mailitems-' + $(this).data('mailsubject'); /* exported-mailitems-username */  
 		
 		if ($("input[name='checkbox-mail']:checked").length == 0) { /* Error handling for multiple export button */
+			Swal.close();
+			
 			Swal.fire({
 				type: 'error',
 				title: 'Restore failed',
 				text: 'No items have been selected.'
 			})
+			
 			return;
 		}
 		
@@ -732,53 +710,53 @@ $(document).on("click", ".download-pst", function(e) {
 		
 		var json = '{ \
 			"ExportToPst": { \
+				"EnablePstSizeLimit": "false", \
 				"items": [ \
 				' + ids + ' \
 				\ ] \
 			} \
 		}';
 	} else {
-		if (type == "single") {	/* Single item export */
+		if (type == 'single') {	/* Single item export */
 			var act = 'exportmailitem';
-			var mailsubject = $(this).data("mailsubject");
+			var mailsubject = $(this).data('mailsubject');
 		} else { /* Full mailbox export */
 			var act = 'exportmailbox';
-			var mailsubject = 'mailbox-' + $(this).data("mailsubject"); /* mailbox-username */
+			var mailsubject = 'mailbox-' + $(this).data('mailsubject'); /* mailbox-username */
 		}
 		
-		var json = '{ "ExportToPst": { } }';
+		var json = '{ \
+			"ExportToPst": { \
+				"EnablePstSizeLimit": "false", \
+			} \
+		}';
 	}
 
-	$.get("veeam.php", {"action" : act, "itemid" : itemid, "mailboxid" : mailboxid, "rid" : rid, "json" : json}).done(function(data) {
+	$.get('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
 		e.preventDefault();
 		
-		if (data == 'error') { /* Microsoft Outlook 2010 or later is not installed */
-			Swal.fire({
-				type: 'info',
-				title: 'Export failed',
-				text: '64-bit version of Microsoft Outlook 2010 or later is not installed.'
-			})
-			return;
+		if (data && data != '500') {
+			$.redirect('download.php', {ext : 'pst', file : data, name : mailsubject}, 'POST');
+				
+			Swal.close();
 		} else {
-			if (data) {
-				$.redirect("download.php", {ext : "pst", file : data, name : mailsubject}, "POST");
-			} else {
-				Swal.fire({
-					type: 'error',
-					title: 'Export failed',
-					text: 'Export failed.'
-				})
-				return;
-			}
+			Swal.fire({
+				type: 'error',
+				title: 'Export failed',
+				text: '' + data
+			})
 		}
+			
+		return;
 	});
 });
+
 /* Restore to a different location */
-$(document).on("click", ".restore-different", function(e) {
-	var itemid = $(this).data("itemid");
-    var mailboxid = $(this).data("mailboxid");
-    var rid = "<?php echo $rid; ?>";	
-	var type = $(this).data("type");
+$('.restore-different').click(function(e) {
+	var itemid = $(this).data('itemid');
+    var mailboxid = $(this).data('mailboxid');
+    var rid = '<?php echo $rid; ?>'; /* Restore Session ID */
+	var type = $(this).data('type');
 	
 	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) { /* Error handling for multiple restore button */
 		Swal.fire({
@@ -831,7 +809,7 @@ $(document).on("click", ".restore-different", function(e) {
 			var elem = document.getElementById('swal2-validation-message');
 			elem.style.setProperty('margin', '10px 0px', '');
 			
-			var restoredata = Object.values(document.getElementsByClassName("restoredata"));
+			var restoredata = Object.values(document.getElementsByClassName('restoredata'));
 			var errors = [ 'No target mailbox defined.', 'No target mailbox server defined.', 'No username defined.', 'No password defined.' ];
 			
 			for (var i = 0; i < restoredata.length; i++) {
@@ -854,17 +832,23 @@ $(document).on("click", ".restore-different", function(e) {
 		},
 	}).then(function(result) {
 		if (result.value) {
-			var user = $("#restore-different-user").val();
-			var pass = $("#restore-different-pass").val();
-			var server = $("#restore-different-server").val();
-			var folder = $("#restore-different-folder").val();
-			var mailbox = $("#restore-different-mailbox").val();
+			var user = $('#restore-different-user').val();
+			var pass = $('#restore-different-pass').val();
+			var server = $('#restore-different-server').val();
+			var folder = $('#restore-different-folder').val();
+			var mailbox = $('#restore-different-mailbox').val();
+			
+			Swal.fire({
+				type: 'info',
+				title: 'Item restore in progress',
+				text: 'Restore in progress...'
+			})
 			
 			if (typeof folder === undefined || !folder) {
-				folder = "Restored-via-web-client";
+				folder = 'Restored-via-web-client';
 			}
 			
-			if (type == "multiple") { /* Multiple items restore */
+			if (type == 'multiple') { /* Multiple items restore */
 				var act = 'restoremultiplemailitems';
 				var ids = '';
 
@@ -891,7 +875,7 @@ $(document).on("click", ".restore-different", function(e) {
 					} \
 				}';
 			} else {
-				if (type == "single") { /* Single item restore */
+				if (type == 'single') { /* Single item restore */
 					var act = 'restoremailitem';
 				} else { /* Full mailbox restore */
 					var act = 'restoremailbox';
@@ -915,24 +899,25 @@ $(document).on("click", ".restore-different", function(e) {
 				}';
 			}
 
-			$.get("veeam.php", {"action" : act, "itemid" : itemid, "mailboxid" : mailboxid, "rid" : rid, "json" : json}).done(function(data) {
+			$.get('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
 				Swal.fire({
 					type: 'info',
 					title: 'Item restore',
 					text: '' + data
 				})
 			});
-		  } else {
+		} else {
 			return;
 		}
 	});
 }); 
+
 /* Restore to original location */
-$(document).on("click", ".restore-original", function(e) {
-	var itemid = $(this).data("itemid");
-    var mailboxid = $(this).data("mailboxid");
-    var rid = "<?php echo $rid; ?>";	
-	var type = $(this).data("type");
+$('.restore-original').click(function(e) {
+	var itemid = $(this).data('itemid');
+    var mailboxid = $(this).data('mailboxid');
+    var rid = '<?php echo $rid; ?>'; /* Restore Session ID */
+	var type = $(this).data('type');
 
 	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) { /* Error handling for multiple restore button */
 		Swal.fire({
@@ -993,8 +978,8 @@ $(document).on("click", ".restore-original", function(e) {
 		},
 	}).then(function(result) {
 		if (result.value) {
-			var user = $("#restore-original-user").val();
-			var pass = $("#restore-original-pass").val();
+			var user = $('#restore-original-user').val();
+			var pass = $('#restore-original-pass').val();
 			
 			Swal.fire({
 				type: 'info',
@@ -1002,7 +987,7 @@ $(document).on("click", ".restore-original", function(e) {
 				text: 'Restore in progress...'
 			})
 
-			if (type == "multiple") { /* Multiple items restore */
+			if (type == 'multiple') { /* Multiple items restore */
 				var act = 'restoremultiplemailitems';
 				var ids = '';
 				
@@ -1019,9 +1004,9 @@ $(document).on("click", ".restore-original", function(e) {
 					} \
 				}';
 			} else {
-				if (type == "single") { /* Single item restore */
+				if (type == 'single') { /* Single item restore */
 					var act = 'restoremailitem';
-				} else if (type == "full") { /* Full mailbox restore */
+				} else if (type == 'full') { /* Full mailbox restore */
 					var act = 'restoremailbox';
 				}
 				
@@ -1032,7 +1017,7 @@ $(document).on("click", ".restore-original", function(e) {
 				}';
 			}
 			
-			$.get("veeam.php", {"action" : act, "itemid" : itemid, "mailboxid" : mailboxid, "rid" : rid, "json" : json}).done(function(data) {
+			$.get('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
 				Swal.fire({
 					type: 'info',
 					title: 'Item restore',
@@ -1054,7 +1039,7 @@ $(document).on("click", ".restore-original", function(e) {
  * @param cleartable 1 or undefined
  */
 function loadMessages(folderid, mailboxid, rid, offset, cleartable) {
-    $.get("veeam.php", {"action" : "getmailitems",  "folderid" : folderid, "offset" : offset, "mailboxid" : mailboxid, "rid" : rid}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getmailitems', 'folderid' : folderid, 'offset' : offset, 'mailboxid' : mailboxid, 'rid' : rid}).done(function(data) {
         var response = JSON.parse(data);
 
         if (typeof cleartable !== 'undefined') {
@@ -1124,19 +1109,26 @@ function loadMessages(folderid, mailboxid, rid, offset, cleartable) {
 </script>
 <?php
 } else {
-    unset($_SESSION);
-    session_destroy();
-	?>
-	<script>
-	Swal.fire({
-		type: 'info',
-		title: 'Session terminated',
-		text: 'Your session has timed out and requires you to login again.'
-	}).then(function(e) {
-		window.location.href = '/index.php';
-	});
-	</script>
-	<?php
+	if (isset($_SESSION['refreshtoken'])) {
+		$veeam->refreshToken($_SESSION['refreshtoken']);
+		
+		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
+        $_SESSION['token'] = $veeam->getToken();
+	} else {
+		unset($_SESSION);
+		session_destroy();
+		?>
+		<script>
+		Swal.fire({
+			type: 'info',
+			title: 'Session expired',
+			text: 'Your session has expired and requires you to login again.'
+		}).then(function(e) {
+			window.location.href = '/index.php';
+		});
+		</script>
+		<?php
+	}
 }
 ?>
 </body>

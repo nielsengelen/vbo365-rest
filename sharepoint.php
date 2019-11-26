@@ -1,5 +1,6 @@
 <?php
 error_reporting(E_ALL || E_STRICT);
+set_time_limit(0);
 
 require_once('config.php');
 require_once('veeam.class.php');
@@ -10,18 +11,14 @@ if (empty($host) || empty($port) || empty($version)) {
     exit('Please modify the configuration file first and configure the Veeam Backup for Microsoft Office 365 host, port and RESTful API version settings.');
 }
 
-if ($version != 'v2' && $version != 'v3') {
-	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Supported versions are either v2 or v3. v1 is not supported.');
+if (!preg_match('/v[3-4]/', $version)) {
+	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 3 and 4 are supported.');
 }
 
 $veeam = new VBO($host, $port, $version);
 
 if (isset($_SESSION['token'])) {
     $veeam->setToken($_SESSION['token']);
-}
-
-if (isset($_SESSION['refreshtoken'])) {
-    $veeam->refreshToken($_SESSION['refreshtoken']);
 }
 ?>
 <!DOCTYPE html>
@@ -45,7 +42,6 @@ if (isset($_SESSION['refreshtoken'])) {
 	<script src="js/jquery.redirect.js"></script>
     <script src="js/moment.min.js"></script>
 	<script src="js/sweetalert2.all.min.js"></script>	
-    <script src="js/veeam.js"></script>
 </head>
 <body>
 <?php
@@ -231,50 +227,45 @@ if (isset($_SESSION['token'])) {
 		if (!isset($_SESSION['rid'])) { /* No restore session is running */
 			if (isset($oid) && !empty($oid)) { /* We got an organization ID so list all users and their state */
 				$org = $veeam->getOrganizationByID($oid);
-		
-				if ($version == 'v2') { /* This requires is a live query thus slower */
-					$users = $veeam->getOrganizationUsers($oid);
-				} else {
-					$users = $veeam->getLicensedUsers($oid);
-					$repo = $veeam->getOrganizationRepository($oid);
-					$usersarray = array();
-					
-					for ($i = 0; $i < count($users['results']); $i++) {
-						array_push($usersarray, array(
-							'id' => $users['results'][$i]['id'],
-							'isBackedUp' => $users['results'][$i]['isBackedUp'],
-							'lastBackupDate' => $users['results'][$i]['lastBackupDate']
-						));
-					}
-					
-					if (count($users['results']) != '0') { /* Gather the backed up users from the repositories related to the organization */
-						$repousersarray = array(); /* Array used to sort the users in case of double data on the repositories */
-						
-						for ($i = 0; $i < count($repo); $i++) {
-							$id = explode('/', $repo[$i]['_links']['backupRepository']['href']); /* Get the organization ID */
-							$repoid = end($id);
-
-							for ($j = 0; $j < count($users['results']); $j++) {
-								$combinedid = $users['results'][$j]['backedUpOrganizationId'] . $users['results'][$j]['id'];
-								$userdata = $veeam->getUserData($repoid, $combinedid);
-								
-								/* Only store data when the SharePoint data is backed up */
-								if (!is_null($userdata) && $userdata['isPersonalSiteBackedUp']) {
-									array_push($repousersarray, array(
-											'id' => $userdata['accountId'], 
-											'email' => $userdata['email'],
-											'name' => $userdata['displayName'],
-											'isPersonalSiteBackedUp' => $userdata['isPersonalSiteBackedUp']
-									));
-								}
-							}
-						}
-						
-						$usersort = array_values(array_column($repousersarray , null, 'name')); /* Sort the array and make sure every value is unique */
-					}
+				$users = $veeam->getLicensedUsers($oid);
+				$repo = $veeam->getOrganizationRepository($oid);
+				$usersarray = array();
+				
+				for ($i = 0; $i < count($users['results']); $i++) {
+					array_push($usersarray, array(
+						'id' => $users['results'][$i]['id'],
+						'isBackedUp' => $users['results'][$i]['isBackedUp'],
+						'lastBackupDate' => $users['results'][$i]['lastBackupDate']
+					));
 				}
 				
-				if (($version == 'v2' && count($users['results']) != '0') || (count($usersort) != '0')) {
+				if (count($users['results']) != '0') { /* Gather the backed up users from the repositories related to the organization */
+					$repousersarray = array(); /* Array used to sort the users in case of double data on the repositories */
+					
+					for ($i = 0; $i < count($repo); $i++) {
+						$id = explode('/', $repo[$i]['_links']['backupRepository']['href']); /* Get the organization ID */
+						$repoid = end($id);
+
+						for ($j = 0; $j < count($users['results']); $j++) {
+							$combinedid = $users['results'][$j]['backedUpOrganizationId'] . $users['results'][$j]['id'];
+							$userdata = $veeam->getUserData($repoid, $combinedid);
+							
+							/* Only store data when the SharePoint data is backed up */
+							if (!is_null($userdata) && $userdata['isPersonalSiteBackedUp']) {
+								array_push($repousersarray, array(
+										'id' => $userdata['accountId'], 
+										'email' => $userdata['email'],
+										'name' => $userdata['displayName'],
+										'isPersonalSiteBackedUp' => $userdata['isPersonalSiteBackedUp']
+								));
+							}
+						}
+					}
+					
+					$usersort = array_values(array_column($repousersarray , null, 'name')); /* Sort the array and make sure every value is unique */
+				}
+				
+				if (count($usersort) != '0') {
 				?>
 				<div class="row">
 				<div class="col-sm-2 text-left marginexplore">
@@ -304,74 +295,39 @@ if (isset($_SESSION['token'])) {
 				<?php
 				}
 			
-				/* v2 shows all sites with their backup status */
-				if ($version == 'v2') {
-					if (count($users['results']) != '0') {
-						?>
-						<div class="alert alert-info">The following is an overview on all accounts within the organization with their backup status.</div>
-						<table class="table table-bordered table-padding table-striped">
-							<thead>
-								<tr>
-									<th>Account</th>
-									<th>Backed up</th>
-								</tr>
-							</thead>
-							<tbody>
-							<?php
-							for ($i = 0; $i < count($users['results']); $i++) {
+				if (count($usersort) != '0') {
+					?>
+					<div class="alert alert-info">The following is an overview on all backed up accounts and their objects within the organization.</div>
+					<table class="table table-bordered table-padding table-striped">
+						<thead>
+							<tr>
+								<th>Personal sites</th>
+								<th>Objects in backup</th>
+								<th>Last backup</th>
+							</tr>
+						</thead>
+						<tbody>
+						<?php
+							for ($i = 0; $i < count($usersort); $i++) {
+								$licinfo = array_search($usersort[$i]['id'], array_column($usersarray, 'id')); /* Get the last backup date for this specific account */
 								echo '<tr>';
-								echo '<td>' . $users['results'][$i]['name'] . '</td>';
-								echo '<td>'; 
-								if ($users['results'][$i]['isBackedUp'] == 'true') { 
-									echo '<span class="label label-success">Yes</span>'; 
-								} else { 
-									echo '<span class="label label-danger">No</span>';
+								echo '<td>' . $usersort[$i]['name'] . '</td>';
+								echo '<td>';
+								if ($usersort[$i]['isPersonalSiteBackedUp']) {
+									echo '<i class="fa fa-share-alt fa-2x" style="color:green" title="SharePoint site"></i> ';
+								} else {
+									echo '<i class="fa fa-share-alt fa-2x" style="color:red" title="SharePoint site"></i> ';
 								}
 								echo '</td>';
+								echo '<td>' . date('d/m/Y H:i T', strtotime($usersarray[$licinfo]['lastBackupDate'])) . '</td>';
 								echo '</tr>';
 							}
-							?>
-							</tbody>
-						</table>
-					<?php
-					} else { /* No sites available for the organization ID */
-						echo '<p>No SharePoint sites found for this organization.</p>';
-					}
-				} else { /* v3 (or higher) shows accounts by backed up objects  */
-					if (count($usersort) != '0') {
 						?>
-						<div class="alert alert-info">The following is an overview on all backed up accounts and their objects within the organization.</div>
-						<table class="table table-bordered table-padding table-striped">
-							<thead>
-								<tr>
-									<th>Personal sites</th>
-									<th>Objects in backup</th>
-									<th>Last backup</th>
-								</tr>
-							</thead>
-							<tbody>
-							<?php
-								for ($i = 0; $i < count($usersort); $i++) {
-									$licinfo = array_search($usersort[$i]['id'], array_column($usersarray, 'id')); /* Get the last backup date for this specific account */
-									echo '<tr>';
-									echo '<td>' . $usersort[$i]['name'] . '</td>';
-									echo '<td>';
-									if ($usersort[$i]['isPersonalSiteBackedUp']) {
-										echo '<i class="fa fa-share-alt fa-2x" style="color:green" title="SharePoint site"></i> ';
-									} else {
-										echo '<i class="fa fa-share-alt fa-2x" style="color:red" title="SharePoint site"></i> ';
-									}
-									echo '</td>';
-									echo '<td>' . date('d/m/Y H:i T', strtotime($usersarray[$licinfo]['lastBackupDate'])) . '</td>';
-									echo '</tr>';
-								}
-							?>
-							</tbody>
-						</table>
-					<?php
-					} else { /* No sites available for the organization ID */
-						echo '<p>No SharePoint sites found for this organization.</p>';
-					}
+						</tbody>
+					</table>
+				<?php
+				} else { /* No sites available for the organization ID */
+					echo '<p>No SharePoint sites found for this organization.</p>';
 				}
             } else { /* No organization has been selected */
                 if ($check === false && strtolower($administrator) == 'yes') { /* Admin */
@@ -401,7 +357,7 @@ if (isset($_SESSION['token'])) {
 						<li><a href="sharepoint/<?php echo $org['id']; ?>"><i class="fa fa-reply"></i> Parent site</a></li>
 						<?php
 						if (isset($list) && !empty($list)) {
-							echo '<li><a href="sharepoint/' . $org['id'] . '/' . $cid . '">' . $name["name"] . '</a></li>';
+							echo '<li><a href="sharepoint/' . $org['id'] . '/' . $sid . '">' . $name["name"] . '</a></li>';
 							echo '<li class="active">' . $list["name"]. '</li>'; 
 						} else {
 							echo '<li class="active">' . $name["name"] . '</li>';
@@ -420,6 +376,9 @@ if (isset($_SESSION['token'])) {
 						<div class="btn-group dropdown"> <!-- Multiple restore dropdown -->
 							<button class="btn btn-default dropdown-toggle form-control" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Restore selected <span class="caret"></span></button>
 							<ul class="dropdown-menu dropdown-menu-right">
+							  <li class="dropdown-header">Download as</li>
+						      <li><a class="dropdown-link download-zip" data-itemid="multipleexport" data-itemname="<?php echo $owner['name']; ?>" data-type="multiple" data-siteid="<?php echo $sid; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> ZIP file</a></li>
+						      <li class="divider"></li>
 							  <li class="dropdown-header">Restore to</li>
 							  <li><a class="dropdown-link restore-original" data-itemid="multiplerestore" data-siteid="<?php echo $sid; ?>" data-type="multiple" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
 							</ul>
@@ -496,7 +455,7 @@ if (isset($_SESSION['token'])) {
 									<div class="btn-group dropdown"> <!-- Single restore dropdown -->
 										<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button>
 										<ul class="dropdown-menu dropdown-menu-right">
-										  <li><a class="dropdown-link restore-original" data-itemid="<?php echo $items['results'][$i]['id']; ?>" data-siteid="<?php echo $sid; ?>" data-filetype="items" data-type="single" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Restore item</a></li>
+										  <li><a class="dropdown-link restore-original" data-itemid="<?php echo $items['results'][$i]['id']; ?>" data-siteid="<?php echo $sid; ?>" data-filetype='items' data-type="single" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Restore item</a></li>
 										</ul>
 									</div>
 								</td>
@@ -520,6 +479,7 @@ if (isset($_SESSION['token'])) {
 										<ul class="dropdown-menu dropdown-menu-right">
 										  <li class="dropdown-header">Download as</li>
 										  <li><a class="dropdown-link download-file" data-itemid="<?php echo $documents['results'][$i]['id']; ?>" data-itemname="<?php echo $documents['results'][$i]['name']; ?>" data-siteid="<?php echo $sid; ?>" data-filetype="documents" data-type="single" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> Plain file</a></li>
+										  <li><a class="dropdown-link download-zip" data-itemid="<?php echo $documents['results'][$i]['id']; ?>" data-itemname="<?php echo $documents['results'][$i]['name']; ?>" data-filetype="documents" data-type="single" data-siteid="<?php echo $sid; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> ZIP file</a></li>
 										  <li class="divider"></li>
 										  <li class="dropdown-header">Restore to</li>
 										  <li><a class="dropdown-link restore-original" data-itemid="<?php echo $documents['results'][$i]['id']; ?>" data-siteid="<?php echo $sid; ?>" data-filetype="documents" data-type="single" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
@@ -622,7 +582,7 @@ $('#logout').click(function(e) {
 });
 
 /* SharePoint Restore Buttons */
-$(document).on('click', '.btn-start-restore', function(e) {
+$('.btn-start-restore').click(function(e) {
     if (typeof $(this).data('jid') !== 'undefined') {
         var jid = $(this).data('jid'); /* Job ID */
     }
@@ -681,8 +641,8 @@ $(document).on('click', '.btn-start-restore', function(e) {
         }
     });
 });
-$(document).on('click', '.btn-stop-restore', function(e) {
-    var rid = "<?php echo $rid; ?>"; /* Restore Session ID */
+$('.btn-stop-restore').click(function(e) {
+    var rid = '<?php echo $rid; ?>'; /* Restore Session ID */
 
     e.preventDefault();
 
@@ -720,23 +680,23 @@ $(document).on('click', '.btn-stop-restore', function(e) {
 if (isset($rid)) {
 ?>
 /* Dropdown settings */
-$(document).on("hide.bs.dropdown", ".dropdown", function(e) {
-    $(e.target).find(">.dropdown-menu:first").slideUp();
+$('hide.bs.dropdown').dropdown(function(e) {
+    $(e.target).find('>.dropdown-menu:first').slideUp();
 });
-$(document).on("show.bs.dropdown", ".dropdown", function(e) {
-    $(e.target).find(">.dropdown-menu:first").slideDown();
+$('show.bs.dropdown').dropdown(function(e) {
+    $(e.target).find('>.dropdown-menu:first').slideDown();
 });
 
 /* Select all checkbox */
-$(document).on("click", "#chk-all", function(e) {
-    var table = $(e.target).closest("table");
-    $("tr:visible :checkbox", table).prop("checked", this.checked);
+$('#chk-all').click(function(e) {
+    var table = $(e.target).closest('table');
+    $('tr:visible :checkbox', table).prop('checked', this.checked);
 });
 /* Item search */
-$("#search-sharepoint").keyup(function(e) {
+$('#search-sharepoint').keyup(function(e) {
     var searchText = $(this).val().toLowerCase();
     /* Show only matching row, hide rest of them */
-    $.each($("#table-sharepoint-items tbody tr"), function(e) {
+    $.each($('#table-sharepoint-items tbody tr'), function(e) {
         if ($(this).text().toLowerCase().indexOf(searchText) === -1) {
            $(this).hide();
         } else {
@@ -746,11 +706,11 @@ $("#search-sharepoint").keyup(function(e) {
 });
 
 /* Users and folder navigation content */
-$("#sharepoint-nav").change(function(e) {
-    var folderid = $("#sharepoint-nav option:selected").data("folderid");
-    var siteid = $("#sharepoint-nav option:selected").data("siteid");
+$('#sharepoint-nav').change(function(e) {
+    var folderid = $('#sharepoint-nav option:selected').data('folderid');
+    var siteid = $('#sharepoint-nav option:selected').data('siteid');
     var offset = 0;
-    var rid = "<?php echo $rid; ?>";
+    var rid = '<?php echo $rid; ?>';
 	
 	$('#table-sharepoint-items tbody').empty();
     loadItems(folderid, siteid, rid, offset);
@@ -758,19 +718,27 @@ $("#sharepoint-nav").change(function(e) {
 
 /* Export and restore options for restore buttons based upon specific action per button */
 /* Export to plain file */
-$(document).on("click", ".download-file", function(e) {
-    var filetype = $(this).data("filetype");
-	var itemid = $(this).data("itemid");
-    var itemname = $(this).data("itemname");
-    var siteid = $(this).data("siteid");
-    var rid = "<?php echo $rid; ?>";
-	var json = '{ "save" : { "asZip" : "false" } }';
+$('.download-file').click(function(e) {
+    var filetype = $(this).data('filetype');
+	var itemid = $(this).data('itemid');
+    var itemname = $(this).data('itemname');
+    var siteid = $(this).data('siteid');
+    var rid = '<?php echo $rid; ?>';
+	var json = '{ "save": { "asZip": "false" } }';
+	
+	Swal.fire({
+		type: 'info',
+		title: 'Download is starting',
+		text: 'Export in progress and your download will start soon...'
+	})
 
-	$.get("veeam.php", {"action" : "exportsharepointitem", "itemid" : itemid, "siteid" : siteid, "rid" : rid, "json" : json, "type" : filetype}).done(function(data) {
+	$.get('veeam.php', {'action' : 'exportsharepointitem', 'itemid' : itemid, 'siteid' : siteid, 'rid'	: rid, 'json' : json, 'type' : filetype}).done(function(data) {
 		e.preventDefault();
 
 		if (data) {
-			$.redirect("download.php", {ext : "plain", file : data, name : itemname}, "POST");
+			$.redirect('download.php', {ext : 'plain', file : data, name : itemname}, 'POST');
+			
+			Swal.close();
 		} else {
 			Swal.fire({
 				type: 'error',
@@ -781,13 +749,92 @@ $(document).on("click", ".download-file", function(e) {
 		}
 	});
 });
+
+/* Export to ZIP file */
+$('.download-zip').click(function(e) {
+	var filetype = $(this).data('filetype');
+	var itemid = $(this).data('itemid');
+    var itemname = $(this).data('itemname');
+    var siteid = $(this).data('siteid');
+    var rid = '<?php echo $rid; ?>';
+	var type = $(this).data('type');
+
+	Swal.fire({
+		type: 'info',
+		title: 'Download is starting',
+		text: 'Export in progress and your download will start soon...'
+	})
+	
+	if (type == 'multiple') { /* Multiple items export */
+		var act = 'exportmultiplesharepointitems';
+		var filetype = 'documents';
+		var ids = '';
+		var filename = 'exported-sharepointitems-' + $(this).data('itemname'); /* exported-sharepointitems-username */  
+		
+		if ($("input[name='checkbox-sharepoint']:checked").length == 0) { /* Error handling for multiple export button */
+			Swal.close();
+			
+			Swal.fire({
+				type: 'error',
+				title: 'Restore failed',
+				text: 'No items have been selected.'
+			})
+			
+			return;
+		}
+
+		$("input[name='checkbox-sharepoint']:checked").each(function(e) {
+			ids = ids + '{ "Id": "' + this.value + '" }, ';
+		});
+		
+		var json = '{ \
+			"save": { \
+				"asZip" : "true", \
+				"Documents": [ \
+				  ' + ids + ' \
+				] \
+			} \
+		}';
+	} else {
+		if (type == 'single') {	/* Single item export */
+			var act = 'exportsharepointitem';
+			var filename = $(this).data('itemname');
+		} else { /* Full SharePoint export */
+			var act = 'exportsharepoint';
+			var filename = 'sharepoint-' + $(this).data('itemname'); /* sharepoint-username */
+		}
+		
+		var filetype = $(this).data('filetype');
+		var json = '{ "save": { "asZip": "true" } }';
+	}
+
+	$.get('veeam.php', {'action' : act, 'itemid' : itemid, 'siteid' : siteid, 'rid' : rid, 'json' : json, 'type' : filetype}).done(function(data) {
+		e.preventDefault();
+	console.log(data);
+	console.log(json);
+		if (data && data != '500') {
+			$.redirect('download.php', {ext : 'zip', file : data, name : filename}, 'POST');
+			
+			Swal.close();
+		} else {
+			Swal.fire({
+				type: 'error',
+				title: 'Export failed',
+				text: '' + data
+			})
+			
+			return;
+		}
+	});
+});
+
 /* Restore to original location */
-$(document).on("click", ".restore-original", function(e) {
-	var filetype = $(this).data("filetype");
-	var itemid = $(this).data("itemid");
-    var siteid = $(this).data("siteid");
-    var rid = "<?php echo $rid; ?>";
-	var type = $(this).data("type");
+$('.restore-original').click(function(e) {
+	var filetype = $(this).data('filetype');
+	var itemid = $(this).data('itemid');
+    var siteid = $(this).data('siteid');
+    var rid = '<?php echo $rid; ?>';
+	var type = $(this).data('type');
 	
 	if (type == 'multiple' && $("input[name='checkbox-sharepoint']:checked").length == 0) { /* Error handling for multiple restore button */
 		Swal.fire({
@@ -843,7 +890,7 @@ $(document).on("click", ".restore-original", function(e) {
 			var elem = document.getElementById('swal2-validation-message');
 			elem.style.setProperty('margin', '10px 0px', '');
 			
-			var restoredata = Object.values(document.getElementsByClassName("restoredata"));
+			var restoredata = Object.values(document.getElementsByClassName('restoredata'));
 			var errors = [ 'No username defined.', 'No password defined.' ];
 			
 			for (var i = 0; i < restoredata.length; i++) {
@@ -859,19 +906,19 @@ $(document).on("click", ".restore-original", function(e) {
 				resolve([
 					$('#restore-original-user').val(),
 					$('#restore-original-pass').val(),
-					$("#restore-original-action").val(),
-					$("#restore-original-listname").val(),
-					$("#restore-original-permissions").val(),
+					$('#restore-original-action').val(),
+					$('#restore-original-listname').val(),
+					$('#restore-original-permissions').val(),
 				 ]);
 			});
 		},
 	}).then(function(result) {
 		if (result.value) {
-			var user = $("#restore-original-user").val();
-			var pass = $("#restore-original-pass").val();
-			var listname = $("#restore-original-listname").val();
-        	var restoreaction = $("#restore-original-action").val();
-		    var restorepermissions = $("#restore-original-permissions").val();
+			var user = $('#restore-original-user').val();
+			var pass = $('#restore-original-pass').val();
+			var listname = $('#restore-original-listname').val();
+        	var restoreaction = $('#restore-original-action').val();
+		    var restorepermissions = $('#restore-original-permissions').val();
 		
 			Swal.fire({
 				type: 'info',
@@ -879,7 +926,7 @@ $(document).on("click", ".restore-original", function(e) {
 				text: 'Restore in progress...'
 			})
 			
-			if (type == "multiple") { /* Multiple items restore */
+			if (type == 'multiple') { /* Multiple items restore */
 				var act = 'restoremultiplesharepointitems';
 				filetype = 'documents';
 				var ids = '';
@@ -902,7 +949,7 @@ $(document).on("click", ".restore-original", function(e) {
 					} \
 				}';
 			} else {
-				if (type == "single") { /* Single item restore */
+				if (type == 'single') { /* Single item restore */
 					var act = 'restoresharepointitem';
 					
 					if ((filetype == 'libraries') || (filetype == 'lists')) {
@@ -931,7 +978,7 @@ $(document).on("click", ".restore-original", function(e) {
 							} \
 						}';
 					}
-				} else if (type == "full") { /* Full SharePoint restore */
+				} else if (type == 'full') { /* Full SharePoint restore */
 					var act = 'restoresharepoint';
 					
 					var json = '{ "restoreTo": \
@@ -952,34 +999,34 @@ $(document).on("click", ".restore-original", function(e) {
 				}
 			}
 
-			$.get("veeam.php", {"action" : act, "itemid" : itemid, "siteid" : siteid, "rid" : rid, "json" : json, "type" : filetype}).done(function(data) {
+			$.get('veeam.php', {'action' : act, 'itemid' : itemid, 'siteid' : siteid, 'rid' : rid, 'json' : json, 'type' : filetype}).done(function(data) {
 				Swal.fire({
 					type: 'info',
 					title: 'Item restore',
 					text: '' + data
 				})
 			});
-		  } else {
+		} else {
 			return;
 		}
 	});
 });
 
 /* Folder browser */
-$(document).on("click", ".sharepoint-folder", function(e) {
-    var folderid = $(this).data("folderid");
-    var parentid = $(this).data("parentid");
-    var siteid = $(this).data("siteid");
-    var rid = "<?php echo $rid; ?>";
+$('.sharepoint-folder').click(function(e) {
+    var folderid = $(this).data('folderid');
+    var parentid = $(this).data('parentid');
+    var siteid = $(this).data('siteid');
+    var rid = '<?php echo $rid; ?>';
 
     loadFolderItems(folderid, parentid, rid, siteid);
 });
-$(document).on("click", ".sharepoint-folder-up", function(e) {
-    var parentid = $(this).data("parentid");
-    var siteid = $(this).data("siteid");
-    var rid = "<?php echo $rid; ?>";
+$('.sharepoint-folder-up').click(function(e) {
+    var parentid = $(this).data('parentid');
+    var siteid = $(this).data('siteid');
+    var rid = '<?php echo $rid; ?>';
 
-    if (parentid == "index") {
+    if (parentid == 'index') {
         window.location.href = window.location.href.split('#')[0];
         return false;
     } else {
@@ -988,11 +1035,11 @@ $(document).on("click", ".sharepoint-folder-up", function(e) {
 });
 
 /* Load more link */
-$(document).on("click", ".load-more-link", function(e) {
-    var folderid = $(this).data("folderid");
-    var siteid = $(this).data("siteid");
-    var offset = $(this).data("offset");
-    var rid = "<?php echo $rid; ?>";
+$('.load-more-link').click(function(e) {
+    var folderid = $(this).data('folderid');
+    var siteid = $(this).data('siteid');
+    var offset = $(this).data('offset');
+    var rid = '<?php echo $rid; ?>';
 
     loadItems(folderid, siteid, rid, offset);
 });
@@ -1020,6 +1067,7 @@ function fillTableDocuments(response, siteid, type) {
                 <ul class="dropdown-menu dropdown-menu-right"> \
                 <li class="dropdown-header">Download as</li> \
                 <li><a class="dropdown-link download-file" data-itemid="' + response.results[i].id + '" data-itemname="' + response.results[i].id + '" data-siteid="' + siteid + '" data-filetype="documents" href="' + window.location + '"><i class="fa fa-download"></i> Plain file</a></li> \
+				<li><a class="dropdown-link download-zip" data-itemid="' + response.results[i].id + '" data-itemname="' + response.results[i].id + '" data-filetype="documents" data-type="single" data-siteid="' + siteid + '" href="' + window.location + '"><i class="fa fa-download"></i> ZIP file</a></li> \
                 <li class="divider"></li> \
                 <li class="dropdown-header">Restore to</li> \
                 <li><a class="dropdown-link restore-original" data-itemid="' + response.results[i].id + '" data-siteid="' + siteid + '" data-filetype="documents" href="' + window.location + '"><i class="fa fa-upload"></i> Original location</a></li> \
@@ -1039,6 +1087,7 @@ function fillTableDocuments(response, siteid, type) {
                 <ul class="dropdown-menu dropdown-menu-right"> \
                 <li class="dropdown-header">Download as</li> \
                 <li><a class="dropdown-link download-file" data-itemid="' + response.results[i].id + '" data-itemname="' + response.results[i].id + '" data-siteid="' + siteid + '" data-filetype="documents" href="' + window.location + '"><i class="fa fa-download"></i> Plain file</a></li> \
+				<li><a class="dropdown-link download-zip" data-itemid="' + response.results[i].id + '" data-itemname="' + response.results[i].id + '" data-filetype="documents" data-type="single" data-siteid="' + siteid + '" href="' + window.location + '"><i class="fa fa-download"></i> ZIP file</a></li> \
                 <li class="divider"></li> \
                 <li class="dropdown-header">Restore to</li> \
                 <li><a class="dropdown-link restore-original" data-itemid="' + response.results[i].id + '" data-siteid="' + siteid + '" data-filetype="documents" href="' + window.location + '"><i class="fa fa-upload"></i> Original location</a></li> \
@@ -1088,7 +1137,7 @@ function loadFolderItems(folderid, parentid, rid, siteid) { /* Used for navigati
     var responsedocuments, responsefolders;
 
     /* First we load the folders */
-    $.get("veeam.php", {"action" : "getsharepointitemsbyfolder", "folderid" : folderid, "rid" : rid, "siteid" : siteid, "type" : "folders"}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getsharepointitemsbyfolder', 'folderid' : folderid, 'rid' : rid, 'siteid' : siteid, 'type' : 'folders'}).done(function(data) {
         responsefolders = JSON.parse(data);
     });
 
@@ -1096,14 +1145,14 @@ function loadFolderItems(folderid, parentid, rid, siteid) { /* Used for navigati
     if (strcmp($type, 'list') === 0) {
     ?>
     /* Second we load the items */
-    $.get("veeam.php", {"action" : "getsharepointitemsbyfolder", "folderid" : folderid, "rid" : rid, "siteid" : siteid, "type" : "items"}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getsharepointitemsbyfolder', 'folderid' : folderid, 'rid' : rid, 'siteid' : siteid, 'type' : 'items'}).done(function(data) {
         responsedocuments = JSON.parse(data);
     });
     <?php
     } else {
     ?>
      /* Second we load the documents */
-    $.get("veeam.php", {"action" : "getsharepointitemsbyfolder", "folderid" : folderid, "rid" : rid, "siteid" : siteid, "type" : "documents"}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getsharepointitemsbyfolder', 'folderid' : folderid, 'rid' : rid, 'siteid' : siteid, 'type' : 'documents'}).done(function(data) {
         responsedocuments = JSON.parse(data);
     });
     <?php
@@ -1152,12 +1201,12 @@ function loadParentFolderItems(parentid, rid, siteid) { /* Used for navigation t
     var newparentid, parentdata, parenturl, responsedocuments, responsefolders;
 
     /* First we load the folders */
-    $.get("veeam.php", {"action" : "getsharepointitemsbyfolder", "folderid" : parentid, "rid" : rid, "siteid" : siteid, "type" : "folders"}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getsharepointitemsbyfolder', 'folderid' : parentid, 'rid' : rid, 'siteid' : siteid, 'type' : 'folders'}).done(function(data) {
         responsefolders = JSON.parse(data);
     });
 
     /* Second we load the documents */
-    $.get("veeam.php", {"action" : "getsharepointitemsbyfolder", "folderid" : parentid, "rid" : rid, "siteid" : siteid, "type" : "documents"}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getsharepointitemsbyfolder', 'folderid' : parentid, 'rid' : rid, 'siteid' : siteid, 'type' : 'documents'}).done(function(data) {
         responsedocuments = JSON.parse(data);
     });
 
@@ -1165,30 +1214,30 @@ function loadParentFolderItems(parentid, rid, siteid) { /* Used for navigation t
     setTimeout(function(e) {
         if (typeof responsefolders !== undefined && responsefolders.results.length != '0') {
             parenturl = responsefolders.results[0]._links.parent.href;
-            newparentid = parenturl.split("/").pop();
+            newparentid = parenturl.split('/').pop();
 
-            $.get("veeam.php", {"action" : "getsharepointparentfolder", "folderid" : newparentid, "rid" : rid, "siteid" : siteid, "type" : "folders"}).done(function(data) {
+            $.get('veeam.php', {'action' : 'getsharepointparentfolder', 'folderid' : newparentid, 'rid' : rid, 'siteid' : siteid, 'type' : 'folders'}).done(function(data) {
                 parentdata = JSON.parse(data);
 
                 if (parentdata === undefined || parentdata._links.parent === undefined) {
-                    newparentid = "index";
+                    newparentid = 'index';
                 } else {
                     parenturl = parentdata._links.parent.href;
-                    newparentid = parenturl.split("/").pop();
+                    newparentid = parenturl.split('/').pop();
                 }
             });
         } else if (typeof responsedocuments !== undefined && responsedocuments.results.length != '0') {
             parenturl = responsedocuments.results[0]._links.parent.href;
-            newparentid = parenturl.split("/").pop();
+            newparentid = parenturl.split('/').pop();
 
-            $.get("veeam.php", {"action" : "getsharepointparentfolder", "folderid" : newparentid, "rid" : rid, "siteid" : siteid, "type" : "documents"}).done(function(data) {
+            $.get('veeam.php', {'action' : 'getsharepointparentfolder', 'folderid' : newparentid, 'rid' : rid, 'siteid' : siteid, 'type' : 'documents'}).done(function(data) {
                 parentdata = JSON.parse(data);
 
                 if (parentdata === undefined || parentdata._links.parent === undefined) {
-                    newparentid = "index";
+                    newparentid = 'index';
                 } else {
                     parenturl = parentdata._links.parent.href;
-                    newparentid = parenturl.split("/").pop();
+                    newparentid = parenturl.split('/').pop();
                 }
             });
         } else {
@@ -1236,11 +1285,11 @@ function loadParentFolderItems(parentid, rid, siteid) { /* Used for navigation t
 function loadItems(folderid, siteid, rid, offset) { /* Used for loading additional items in a folder */
     var responsedocuments, responsefolders;
 
-    $.get("veeam.php", {"action" : "getsharepointitems", "folderid" : folderid, "rid" : rid, "siteid" : siteid, "offset" : offset, "type" : "folders"}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getsharepointitems', 'folderid' : folderid, 'rid' : rid, 'siteid' : siteid, 'offset' : offset, 'type' : 'folders'}).done(function(data) {
         responsefolders = JSON.parse(data);
     });
 
-    $.get("veeam.php", {"action" : "getsharepointitems", "folderid" : folderid, "rid" : rid, "siteid" : siteid, "offset" : offset, "type" : "documents"}).done(function(data) {
+    $.get('veeam.php', {'action' : 'getsharepointitems', 'folderid' : folderid, 'rid' : rid, 'siteid' : siteid, 'offset' : offset, 'type' : 'documents'}).done(function(data) {
         responsedocuments = JSON.parse(data);
     });
 
@@ -1269,19 +1318,26 @@ function loadItems(folderid, siteid, rid, offset) { /* Used for loading addition
 </script>
 <?php
 } else {
-    unset($_SESSION);
-    session_destroy();
-?>
-<script>
-Swal.fire({
-	type: 'info',
-	title: 'Session terminated',
-	text: 'Your session has timed out and requires you to login again.'
-}).then(function(e) {
-	window.location.href = '/index.php';
-});
-</script>
-<?php
+	if (isset($_SESSION['refreshtoken'])) {
+		$veeam->refreshToken($_SESSION['refreshtoken']);
+		
+		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
+        $_SESSION['token'] = $veeam->getToken();
+	} else {
+		unset($_SESSION);
+		session_destroy();
+		?>
+		<script>
+		Swal.fire({
+			type: 'info',
+			title: 'Session expired',
+			text: 'Your session has expired and requires you to login again.'
+		}).then(function(e) {
+			window.location.href = '/index.php';
+		});
+		</script>
+		<?php
+	}
 }
 ?>
 </body>

@@ -193,8 +193,8 @@ if ($action == 'exportsharepoint') {
 if ($action == 'exportsharepointitem') {
     $veeam->exportSharePointItem($itemid, $siteid, $rid, $json, $type);
 }
-if ($action == 'exportmultiplesharepointitem') {
-    $veeam->exportMultipleSharePointItem($siteid, $rid, $json);
+if ($action == 'exportmultiplesharepointitems') {
+    $veeam->exportMultipleSharePointItems($itemid, $siteid, $rid, $json, $type);
 }
 if ($action == 'restoresharepoint') {
     $veeam->restoreSharePoint($siteid, $rid, $json);
