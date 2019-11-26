@@ -113,19 +113,19 @@ if (isset($_SESSION['token'])) {
 		</table>
 		<?php
 			for ($i = 0; $i < count($objectrepos); $i++) {
-				if (isset($objectrepos[$i]['usedSpaceGB']) && !isset($objectrepos[$i]['freeSpaceGB'])) {
+				if (isset($objectrepos[$i]['usedSpaceBytes']) && !isset($objectrepos[$i]['freeSpaceBytes'])) {
 					?>
 					<script>
-					var usedspaceobject = filesize(<?php echo $objectrepos[$i]['usedSpaceGB']; ?>, {round: 1});
+					var usedspaceobject = filesize(<?php echo $objectrepos[$i]['usedSpaceBytes']; ?>, {round: 1});
 					
 					document.getElementById('size-object-<?php echo $objectrepos[$i]['id']; ?>').innerHTML = usedspaceobject + ' used';
 					</script>
 					<?php
-				} else if (isset($objectrepos[$i]['usedSpaceGB']) && isset($objectrepos[$i]['freeSpaceGB'])) {
+				} else if (isset($objectrepos[$i]['usedSpaceBytes']) && isset($objectrepos[$i]['freeSpaceBytes'])) {
 					?>
 					<script>
-					var freespaceobject = filesize(<?php echo $objectrepos[$i]['freeSpaceGB']; ?>, {round: 1});
-					var usedspaceobject = filesize(<?php echo $objectrepos[$i]['usedSpaceGB']; ?>, {round: 1});
+					var freespaceobject = filesize(<?php echo $objectrepos[$i]['freeSpaceBytes']; ?>, {round: 1});
+					var usedspaceobject = filesize(<?php echo $objectrepos[$i]['usedSpaceBytes']; ?>, {round: 1});
 					
 					document.getElementById('size-object-<?php echo $objectrepos[$i]['id']; ?>').innerHTML = usedspaceobject + ' used (' + freespaceobject + ' available)';
 					</script>
