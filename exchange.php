@@ -72,42 +72,29 @@ if (isset($_SESSION['token'])) {
 		if (!isset($_SESSION['rid'])) { /* No restore session is running */
 			$check = filter_var($user, FILTER_VALIDATE_EMAIL);
 
-			if ($check === false && strtolower($administrator) == 'yes') { /* We are an admin so we list all the organizations in the menu */
-				$oid = $_GET['oid'];
+			echo '<ul id="ul-exchange-users">';
+			
+			if ($check === false && strtolower($administrator) == 'yes') {
 				$org = $veeam->getOrganizations();
-				
-				echo '<ul id="ul-exchange-users">';
+				$oid = $_GET['oid'];
+				$menu = false;
 				
 				for ($i = 0; $i < count($org); $i++) {
-					if (isset($oid) && !empty($oid) && ($oid == $org[$i]['id'])) {
+					if (isset($oid) && !empty($oid) && $oid == $org[$i]['id']) {
 						echo '<li class="active"><a href="exchange/' . $org[$i]['id'] . '">' . $org[$i]['name'] . '</a></li>';
 					} else {
 						echo '<li><a href="exchange/' . $org[$i]['id'] . '">' . $org[$i]['name'] . '</a></li>';
 					}
 				}
-				
-				echo '</ul>';
 			} else {
 				$org = $veeam->getOrganization();
-				?>
-				<button class="btn btn-default btn-secondary btn-start-restore" title="Start Restore">Start Restore</button><br /><br />
-				<div class="input-group flatpickr paddingdate" data-wrap="true" data-clickOpens="false">
-					<input type="text" class="form-control" id="pit-date" placeholder="Select a date.." data-input>
-					<span class="input-group-addon" data-open><i class="fa fa-calendar"></i></span>
-					<script>
-					$('#pit-date').removeClass('errorClass');
-
-					$('.flatpickr').flatpickr({
-						dateFormat: "Y.m.d H:i",
-						enableTime: true,
-						minDate: "<?php echo date('Y.m.d', strtotime($org['firstBackuptime'])); ?>",
-						maxDate: "<?php echo date('Y.m.d', strtotime($org['lastBackuptime'])); ?>",
-						time_24hr: true
-					});
-					</script>
-				</div>
-				<?php
+				$oid = $org['id'];
+				$menu = true;
+				
+				echo '<li class="active"><a href="exchange">' . $org['name'] . '</a></li>';
 			}
+		
+			echo '</ul>';
 		} else { /* Restore session is running */
 			$rid = $_SESSION['rid'];
 
@@ -182,7 +169,40 @@ if (isset($_SESSION['token'])) {
 	<main id="main">
 		<h1>Exchange</h1>
 		<div class="exchange-container">
-		<?php    
+		<?php
+		if (isset($oid) || $menu) {
+			if ($check === false && strtolower($administrator) == 'yes') {
+				$org = $veeam->getOrganizationByID($oid);
+			}
+		?>
+		<div class="row">
+			<div class="col-sm-2 text-left marginexplore">
+				<button class="btn btn-default btn-secondary btn-start-restore" title="Explore last backup (<?php echo date('d/m/Y H:i T', strtotime($org['lastBackuptime'])); ?>)" <?php if (isset($_GET['oid'])) { echo 'data-oid="' . $_GET['oid'] . '"'; } ?> data-pit="<?php echo date('Y.m.d H:i', strtotime($org['lastBackuptime'])); ?>" data-latest="true">Explore last backup</button>
+			</div>
+			<div class="col-sm-2 text-left">
+				<div class="input-group flatpickr paddingdate" data-wrap="true" data-clickOpens="false">
+					<input type="text" class="form-control" id="pit-date" placeholder="Select a date..." data-input>
+					<span class="input-group-addon" data-open><i class="fa fa-calendar"></i></span>
+					<script>
+					$('#pit-date').removeClass('errorClass');
+
+					$('.flatpickr').flatpickr({
+						dateFormat: "Y.m.d H:i",
+						enableTime: true,
+						minDate: "<?php echo date('Y.m.d', strtotime($org['firstBackuptime'])); ?>",
+						maxDate: "<?php echo date('Y.m.d', strtotime($org['lastBackuptime'])); ?>",
+						time_24hr: true
+					});
+					</script>
+				</div>
+			</div>
+			<div class="col-sm-8 text-left">
+				<button class="btn btn-default btn-secondary btn-start-restore" title="Start Restore" <?php if (isset($_GET['oid'])) { echo 'data-oid="' . $_GET['oid'] . '"'; } ?> data-latest="false">Start Restore</button>
+			</div>
+		</div>
+		<?php
+		}
+		
 		if (!isset($_SESSION['rid'])) { /* No restore session is running */
 			if (isset($oid) && !empty($oid)) { /* We got an organization ID so list all users and their state */
 				$org = $veeam->getOrganizationByID($oid);
@@ -224,37 +244,7 @@ if (isset($_SESSION['token'])) {
 					
 					$usersort = array_values(array_column($repousersarray , null, 'name')); /* Sort the array and make sure every value is unique */
 				}
-				
-				if (count($usersort) != '0') {
-				?>
-				<div class="row">
-				<div class="col-sm-2 text-left marginexplore">
-					<button class="btn btn-default btn-secondary btn-start-restore" title="Explore last backup (<?php echo date('d/m/Y H:i T', strtotime($org['lastBackuptime'])); ?>)" data-oid="<?php echo $oid; ?>" data-pit="<?php echo date('Y.m.d H:i', strtotime($org['lastBackuptime'])); ?>" data-latest="true">Explore last backup</button>
-				</div>
-				<div class="col-sm-2 text-left">
-					<div class="input-group flatpickr paddingdate" data-wrap="true" data-clickOpens="false">
-						<input type="text" class="form-control" id="pit-date" placeholder="Select a date..." data-input>
-						<span class="input-group-addon" data-open><i class="fa fa-calendar"></i></span>
-						<script>
-						$('#pit-date').removeClass('errorClass');
 
-						$('.flatpickr').flatpickr({
-							dateFormat: "Y.m.d H:i",
-							enableTime: true,
-							minDate: "<?php echo date('Y.m.d', strtotime($org['firstBackuptime'])); ?>",
-							maxDate: "<?php echo date('Y.m.d', strtotime($org['lastBackuptime'])); ?>",
-							time_24hr: true
-						});
-						</script>
-					</div>
-				</div>
-				<div class="col-sm-8 text-left">
-					<button class="btn btn-default btn-secondary btn-start-restore" title="Start Restore" data-oid="<?php echo $oid; ?>" data-latest="false">Start Restore</button>
-				</div>
-				</div>
-				<?php
-				}
-				
 				if (count($usersort) != '0') {
 				?>
 				<div class="alert alert-info">The following is an overview on all backed up accounts and their objects within the organization.</div>
@@ -292,7 +282,11 @@ if (isset($_SESSION['token'])) {
 				</table>
 				<?php
 				} else { /* No users available for the organization ID */
-					echo '<p>No users found for this organization.</p>';
+					if ($check === false && strtolower($administrator) == 'yes') { /* Admin */
+						echo '<p>No users found for this organization.</p>';
+					} else { /* Tenant */
+						echo '<p>Select a point in time and start the restore.</p>';
+					}
 				}
 				
 			} else { /* No organization has been selected */
