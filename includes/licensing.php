@@ -4,11 +4,9 @@ require_once('../veeam.class.php');
 
 session_start();
 
-$veeam = new VBO($host, $port, $version);
-
 if (isset($_SESSION['token'])) {
+	$veeam = new VBO($host, $port, $version);
 	$veeam->setToken($_SESSION['token']);	
-    $user = $_SESSION['user'];
 	$org = $veeam->getOrganizations();
 ?>
 <div class="main-container">
@@ -22,79 +20,66 @@ if (isset($_SESSION['token'])) {
                 <th>Organization</th>
                 <th>Licenses used</th>
                 <th>Licenses exceeded</th>
-				<?php
-				if ($version != 'v2') { 
-				?>
 				<th class="text-center">Licensed users</th>
-				<?php
-				} 
-				?>
             </tr>
         </thead>
         <tbody> 
         <?php
         for ($i = 0; $i < count($org); $i++) {
             $license = $veeam->getLicenseInfo($org[$i]['id']);
+			$users = $veeam->getLicensedUsers($org[$i]['id']);
+			$repo = $veeam->getOrganizationRepository($org[$i]['id']);
+			$usersarray = array();
 
-			if ($version != 'v2') {
-				$users = $veeam->getLicensedUsers($org[$i]['id']);
-				$repo = $veeam->getOrganizationRepository($org[$i]['id']);
-				$usersarray = array();
+			for ($x = 0; $x < count($users['results']); $x++) {
+				array_push($usersarray, array(
+					'email' => $users['results'][$x]['name'],
+					'isBackedUp' => $users['results'][$x]['isBackedUp'],
+					'lastBackupDate' => $users['results'][$x]['lastBackupDate'],
+					'licenseState' => $users['results'][$x]['licenseState']
+				));
+			}
 
-				for ($x = 0; $x < count($users['results']); $x++) {
-					array_push($usersarray, array(
-						'email' => $users['results'][$x]['name'],
-						'isBackedUp' => $users['results'][$x]['isBackedUp'],
-						'lastBackupDate' => $users['results'][$x]['lastBackupDate'],
-						'licenseState' => $users['results'][$x]['licenseState']
-					));
-				}
+			if (count($repo) != '0') {
+				$repousersarray = array();
+				
+				for ($j = 0; $j < count($repo); $j++) {
+					$id = explode('/', $repo[$j]['_links']['backupRepository']['href']);
+					$repoid = end($id);
 
-				if (count($users['results']) != '0') { /* Gather the backed up users from the repositories related to the organization */
-					$repousersarray = array(); /* Array used to sort the users in case of double data on the repositories */
-					
-					for ($j = 0; $j < count($repo); $j++) {
-						$id = explode('/', $repo[$j]['_links']['backupRepository']['href']); /* Get the organization ID */
-						$repoid = end($id);
+					for ($k = 0; $k < count($users['results']); $k++) {
+						$combinedid = $users['results'][$k]['backedUpOrganizationId'] . $users['results'][$k]['id'];
+						$userdata = $veeam->getUserData($repoid, $combinedid);
 
-						for ($k = 0; $k < count($users['results']); $k++) {
-							$combinedid = $users['results'][$k]['backedUpOrganizationId'] . $users['results'][$k]['id'];
-							$userdata = $veeam->getUserData($repoid, $combinedid);
-							
-							/* Only store data when the SharePoint data is backed up */
-							if (!is_null($userdata)) {
-								array_push($repousersarray, array(
-										'id' => $userdata['id'],
-										'email' => $userdata['email'],
-										'name' => $userdata['displayName'],
-										'isMailboxBackedUp' => $userdata['isMailboxBackedUp'],
-										'isOneDriveBackedUp' => $userdata['isOneDriveBackedUp'],
-										'isArchiveBackedUp' => $userdata['isArchiveBackedUp'],
-										'isPersonalSiteBackedUp' => $userdata['isPersonalSiteBackedUp']
-								));
+						if (!is_null($userdata)) {
+							if (!empty($userdata['email'])) {
+								$email = $userdata['email'];
+							} else {
+								$email = 'N/A';
 							}
+							
+							array_push($repousersarray, array(
+									'id' => $userdata['id'],
+									'email' => $email,
+									'name' => $userdata['displayName'],
+									'isMailboxBackedUp' => $userdata['isMailboxBackedUp'],
+									'isOneDriveBackedUp' => $userdata['isOneDriveBackedUp'],
+									'isArchiveBackedUp' => $userdata['isArchiveBackedUp'],
+									'isPersonalSiteBackedUp' => $userdata['isPersonalSiteBackedUp']
+							));
 						}
 					}
-					
-					$usersort = array_values(array_column($repousersarray , null, 'id')); /* Sort the array and make sure every value is unique */
 				}
+				
+				$usersort = array_values(array_column($repousersarray , null, 'id'));			
 			}
 			?>
             <tr>
                 <td><?php echo $org[$i]['name']; ?></td>
                 <td><?php echo $license['licensedUsers']; ?></td>
                 <td><?php echo $license['newUsers']; ?></td>
-				<?php
-				if ($version != 'v2') {
-				?>
 				<td class="pointer text-center" data-toggle="collapse" data-target="#licensedUsers<?php echo $i; ?>"><a href="#" onClick="return false;">View</a></td>
-				<?php
-				}
-				?>
 			</tr>
-			<?php
-			if ($version != 'v2') {
-			?>
 			<tr><!-- Start of table for licensed users -->
 				<td colspan="4" class="zeroPadding">
 					<div id="licensedUsers<?php echo $i; ?>" class="accordian-body collapse">
@@ -152,7 +137,6 @@ if (isset($_SESSION['token'])) {
 				</td>
 			</tr>
 			<?php
-			}
 		}
 		?>
         </tbody>
