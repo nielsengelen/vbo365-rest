@@ -4,9 +4,8 @@ require_once('../veeam.class.php');
 
 session_start();
 
-$veeam = new VBO($host, $port, $version);
-
 if (isset($_SESSION['token'])) {
+	$veeam = new VBO($host, $port, $version);
 	$veeam->setToken($_SESSION['token']);
     $user = $_SESSION['user'];
 	$sessions = $veeam->getSessions();
@@ -17,8 +16,8 @@ if (isset($_SESSION['token'])) {
 	}
 
 	usort($time, function($a, $b) { /* Sort the default list by start time (last one first) */
-		$ad = new DateTime($a['endTime']);
-		$bd = new DateTime($b['endTime']);
+		$ad = new DateTime($a['creationTime']);
+		$bd = new DateTime($b['creationTime']);
 	  
 		if ($ad == $bd)
 			return 0;
@@ -128,7 +127,7 @@ $('.item').click(function(e) {
     var icon, text;
     var id = $(this).data('sessionid');
     
-    $.get('veeam.php', {'action' : 'getsessionlog', 'id' : id}).done(function(data) {
+    $.post('veeam.php', {'action' : 'getsessionlog', 'id' : id}).done(function(data) {
         response = JSON.parse(data);
 
         $('#table-session-content tbody').empty();
@@ -168,7 +167,7 @@ $('.load-more-link').click(function(e) {
 function loadSessions(offset) {
     var result, status;
 
-    $.get('veeam.php', {'action' : 'getsessions', 'offset' : offset}).done(function(data) {
+    $.post('veeam.php', {'action' : 'getsessions', 'offset' : offset}).done(function(data) {
         var response = JSON.parse(data);
 
         for (var i = 0; i < response.results.length; i++) {
