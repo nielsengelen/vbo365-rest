@@ -97,7 +97,7 @@ This serves as an example on how to work with the RESTful API calls and should b
 
 ## ❗ Known issues
 
-- No known issues
+- Current portal does not support logging in with MFA with security defaults (App based)
 
 **Note:** There is currently no SSL verification due to self signed certificate testing, please change settings 'verify' to true or remove the specific line accordingly in `veeam.class.php`.
 
