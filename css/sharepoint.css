@@ -17,3 +17,10 @@
 .sharepoint-container table {
   width: 100%;
 }
+
+#table-sharepoint-folders th {
+  height: 40px;
+}
+#table-sharepoint-items th {
+  height: 40px;
+}

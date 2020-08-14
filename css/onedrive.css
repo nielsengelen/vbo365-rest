@@ -17,3 +17,10 @@
 .onedrive-container table {
   width: 100%;
 }
+
+#table-onedrive-folders th {
+  height: 40px;
+}
+#table-onedrive-items th {
+  height: 40px;
+}

@@ -4,9 +4,8 @@ require_once('../veeam.class.php');
 
 session_start();
 
-$veeam = new VBO($host, $port, $version);
-
 if (isset($_SESSION['token'])) {
+	$veeam = new VBO($host, $port, $version);
 	$veeam->setToken($_SESSION['token']);	
     $user = $_SESSION['user'];
 	$org = $veeam->getOrganizations();
@@ -23,13 +22,7 @@ if (isset($_SESSION['token'])) {
                 <th>Region</th>
                 <th>First backup</th>
                 <th>Last backup</th>
-				<?php
-				if ($version != 'v2') {
-				?>
 				<th class="text-center">Licensed users</th>
-				<?php
-				}
-				?>
             </tr>
         </thead>
         <tbody> 
@@ -43,9 +36,6 @@ if (isset($_SESSION['token'])) {
                 <td><?php echo (isset($org[$i]['lastBackuptime']) ? date('d/m/Y H:i T', strtotime($org[$i]['lastBackuptime'])) : 'N/A'); ?></td>
 				<td class="pointer text-center" data-toggle="collapse" data-target="#licensedUsers<?php echo $i; ?>"><a href="#" onClick="return false;">View</a></td>
             </tr>
-			<?php
-			if ($version != 'v2') {
-			?>
 			<tr><!-- Start of table for licensed users -->
                 <td colspan="6" class="zeroPadding">
 					<div id="licensedUsers<?php echo $i; ?>" class="accordian-body collapse">
@@ -60,17 +50,23 @@ if (isset($_SESSION['token'])) {
 							</thead>
 							<tbody>
 								<?php
-									$users = $veeam->getLicensedUsers($org[$i]['id']);
+									$license = $veeam->getLicenseInfo($org[$i]['id']);
 									
-									for ($j = 0; $j < count($users['results']); $j++) {
-										echo '<tr>';
-										echo '<td>' . $users['results'][$j]['name'] . '</td>';
-										echo '<td>' . $users['results'][$j]['licenseState'] . '</td>';
-										echo '<td>' . date('d/m/Y H:i T', strtotime($users['results'][$j]['lastBackupDate'])) . '</td>';
-										echo '<td>'; 
-										if ($users['results'][$j]['isBackedUp'] == 'true') { echo '<span class="label label-success">Yes</span>'; } else { echo '<span class="label label-danger">No</span>'; }
-										echo '</td>';
-										echo '</tr>';
+									if ($license['licensedUsers'] != '0') {
+										$users = $veeam->getLicensedUsers($org[$i]['id']);
+									
+										for ($j = 0; $j < count($users['results']); $j++) {
+											echo '<tr>';
+											echo '<td>' . $users['results'][$j]['name'] . '</td>';
+											echo '<td>' . $users['results'][$j]['licenseState'] . '</td>';
+											echo '<td>' . date('d/m/Y H:i T', strtotime($users['results'][$j]['lastBackupDate'])) . '</td>';
+											echo '<td>'; 
+											if ($users['results'][$j]['isBackedUp'] == 'true') { echo '<span class="label label-success">Yes</span>'; } else { echo '<span class="label label-danger">No</span>'; }
+											echo '</td>';
+											echo '</tr>';
+										}
+									} else {
+										echo '<tr><td colspan="4">No licensed users.</td></tr>';
 									}
 								?>
 							</tbody>
@@ -79,7 +75,6 @@ if (isset($_SESSION['token'])) {
                 </td>
             </tr>
         <?php
-			}
         }
 		?>	
         </tbody>

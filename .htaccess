@@ -24,6 +24,7 @@ RewriteRule ^sharepoint/([^/]+)/?$ sharepoint.php?oid=$1 [L,QSA]
 RewriteRule ^sharepoint/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2 [L,QSA]
 RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3 [L,QSA]
 RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3&type=$4 [L,QSA]
+RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3&type=$4&fid=$5 [L,QSA]
 
 # Disable directory browsing, multiviews and enable follow symlinks 
 Options -Indexes -MultiViews +FollowSymLinks

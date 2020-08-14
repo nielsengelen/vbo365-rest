@@ -18,24 +18,9 @@
   width: 100%;
 }
 
-div.inbox-header {
-  border-bottom: 1px solid #ccc;
-  float: none;
-  height: 25px;
-  margin-top: 10px;
-  text-align: center;
-  vertical-align: middle;  
+#table-exchange-folders th {
+  height: 40px;
 }
-ul.nav-pills {
-  margin: 0;
-  padding: 5px 10px;
-}
-ul.inbox-nav {
-    display: inline-block;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-}
-ul.inbox-divider {
-    border-bottom: 1px solid #d5d8df;
+#table-exchange-items th {
+  height: 40px;
 }

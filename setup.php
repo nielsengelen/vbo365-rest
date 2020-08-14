@@ -48,10 +48,10 @@ if (count($_POST) != '0') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Setup for Veeam Backup for Microsoft Office 365 Self Service Web Portal</title>
+    <title>Setup for Unofficial Veeam Backup for Microsoft Office 365 Self Service Web Portal</title>
     <link rel="shortcut icon" href="images/favicon.ico" />
-    <link rel="stylesheet" type="text/css" href="vendor/twbs/bootstrap/dist/css/bootstrap.min.css" />
-	<script src="vendor/components/jquery/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
+	<script src="js/jquery.min.js"></script>
 </head>
 <body>
 <fieldset>

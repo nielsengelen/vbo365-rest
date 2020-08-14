@@ -4,9 +4,8 @@ require_once('../veeam.class.php');
 
 session_start();
 
-$veeam = new VBO($host, $port, $version);
-
 if (isset($_SESSION['token'])) {
+	$veeam = new VBO($host, $port, $version);
 	$veeam->setToken($_SESSION['token']);
 	$proxies = $veeam->getProxies();
 ?>

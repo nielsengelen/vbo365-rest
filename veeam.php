@@ -1,208 +1,212 @@
 <?php
-/* Action handler page for jQuery Calls */
+session_start();
+
 require_once('config.php');
 require_once('veeam.class.php');
 
-session_start();
+if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+	if (isset($_POST['action'])) { $action = $_POST['action']; }
+	if (isset($_POST['json'])) { $json = $_POST['json']; }
+	if (isset($_POST['limit'])) { $limit = $_POST['limit']; }
+	if (isset($_POST['offset'])) { $offset = $_POST['offset']; }
+	if (isset($_POST['type'])) { $type = $_POST['type']; }
 
-if (isset($_GET['action'])) { $action = $_GET['action']; }
-if (isset($_GET['json'])) { $json = $_GET['json']; }
-if (isset($_GET['limit'])) { $limit = $_GET['limit']; }
-if (isset($_GET['offset'])) { $offset = $_GET['offset']; }
-if (isset($_GET['type'])) { $type = $_GET['type']; }
+	if (isset($_POST['id'])) { $id = $_POST['id']; }
+	if (isset($_POST['folderid'])) { $folderid = $_POST['folderid']; }
+	if (isset($_POST['itemid'])) { $itemid = $_POST['itemid']; }
+	if (isset($_POST['mailboxid'])) { $mailboxid = $_POST['mailboxid']; }
+	if (isset($_POST['rid'])) { $rid = $_POST['rid']; }
+	if (isset($_POST['siteid'])) { $siteid = $_POST['siteid']; }
+	if (isset($_POST['userid'])) { $userid = $_POST['userid']; }
 
-if (isset($_GET['id'])) { $id = $_GET['id']; }
-if (isset($_GET['folderid'])) { $folderid = $_GET['folderid']; }
-if (isset($_GET['itemid'])) { $itemid = $_GET['itemid']; }
-if (isset($_GET['mailboxid'])) { $mailboxid = $_GET['mailboxid']; }
-if (isset($_GET['rid'])) { $rid = $_GET['rid']; }
-if (isset($_GET['siteid'])) { $siteid = $_GET['siteid']; }
-if (isset($_GET['userid'])) { $userid = $_GET['userid']; }
+	$veeam = new VBO($host, $port, $version);
+	$veeam->setToken($_SESSION['token']);
 
-$veeam = new VBO($host, $port, $version);
-$veeam->setToken($_SESSION['token']);
+	/* Jobs Calls */
+	if ($action == 'changejobstate') {
+		$veeam->changeJobState($id, $json);
+	}
+	if ($action == 'getjobs') {
+		$jobs = $veeam->getJobs($id);
+		echo json_encode($jobs);
+	}
+	if ($action == 'getjobsession') {
+		$getjobsession = $veeam->getJobSession($id);
+		echo json_encode($getjobsession);
+	}
+	if ($action == 'startjob') {
+		$veeam->startJob($id);
+	}
 
-/* Jobs Calls */
-if ($action == 'createjob') {
-    $veeam->createJob($id, $json);
-}
-if ($action == 'changejobstate') {
-    $veeam->changeJobState($id, $json);
-}
-if ($action == 'getjobs') {
-    $jobs = $veeam->getJobs($id);
-    echo json_encode($jobs);
-}
-if ($action == 'getjobsession') {
-    $getjobsession = $veeam->getJobSession($id);
-    echo json_encode($getjobsession);
-}
-if ($action == 'startjob') {
-    $veeam->startJob($id);
-}
+	/* Organizations Calls */
+	if ($action == 'getorganizations') {
+		$org = $veeam->getOrganizations();
+		echo json_encode($org);
+	}
 
-/* Organizations Calls */
-if ($action == 'createorganization') {
-    $veeam->createOrganization($json);
-}
-if ($action == 'getorganizations') {
-    $org = $veeam->getOrganizations();
-    echo json_encode($org);
-}
+	/* Repositories Calls */
+	if ($action == 'getrepo') {
+		$repo = $veeam->getBackupRepository($id);
+		echo json_encode($repo);
+	}
 
-/* Proxies Calls */
-if ($action == 'createproxy') {
-    $veeam->createProxy($json);
-}
+	/* Sessions Calls */
+	if ($action == 'getsessionlog') {
+		$log = $veeam->getSessionLog($id);
+		echo json_encode($log);
+	}
+	if ($action == 'getsessions') {
+		$log = $veeam->getSessions($offset);
+		echo json_encode($log);
+	}
+	if ($action == 'getbackupsessionlog') {
+		$log = $veeam->getBackupSessionLog($id);
+		echo json_encode($log);
+	}
+	if ($action == 'getbackupsessions') {
+		$log = $veeam->getBackupSessions();
+		echo json_encode($log);
+	}
+	if ($action == 'getrestoresessionevents') {
+		$log = $veeam->getRestoreSessionEvents($id);
+		echo json_encode($log);
+	}
+	if ($action == 'getrestoresessions') {
+		$log = $veeam->getRestoreSessions();
+		echo json_encode($log);
+	}
 
-/* Repositories Calls */
-if ($action == 'createrepository') {
-    $veeam->createRepository($json);
-}
-if ($action == 'getrepo') {
-    $repo = $veeam->getBackupRepository($id);
-    echo json_encode($repo);
-}
+	/* Restore Session Calls */
+	if ($action == 'startrestore') {
+		if (isset($id) && ($id != "tenant")) {
+			$session = $veeam->startRestoreSession($json, $id);
+		} else {
+			$session = $veeam->startRestoreSession($json);
+		}
+		
+		$_SESSION['rid'] = $session['id'];
+		$_SESSION['rtype'] = strtolower($session['type']);
+		
+		echo $session['id'];
+	}
+	if ($action == 'stoprestore') {
+		$session = $veeam->stopRestoreSession($id);
+		
+		unset($_SESSION['rid']);
+		unset($_SESSION['rtype']);
+	}
 
-/* Sessions Calls */
-if ($action == 'getsessionlog') {
-    $log = $veeam->getSessionLog($id);
-    echo json_encode($log);
-}
-if ($action == 'getsessions') {
-    $log = $veeam->getSessions($offset);
-    echo json_encode($log);
-}
-if ($action == 'getbackupsessionlog') {
-	$log = $veeam->getBackupSessionLog($id);
-	echo json_encode($log);
-}
-if ($action == 'getbackupsessions') {
-	$log = $veeam->getBackupSessions();
-	echo json_encode($log);
-}
-if ($action == 'getrestoresessionevents') {
-	$log = $veeam->getRestoreSessionEvents($id);
-	echo json_encode($log);
-}
-if ($action == 'getrestoresessions') {
-	$log = $veeam->getRestoreSessions();
-	echo json_encode($log);
-}
+	/* Exchange Calls */
+	if ($action == 'getmailitems') {
+		$items = $veeam->getMailboxItems($mailboxid, $rid, $folderid, $offset = null);
+		
+		echo json_encode($items);
+	}
+	if ($action == 'getmailfolders') {
+		$folders = $veeam->getMailboxFolders($mailboxid, $rid, $folderid);
+		
+		echo json_encode($folders);
+	}
 
-/* Restore Session Calls */
-if ($action == 'startrestore') {
-    if (isset($id) && ($id != "tenant")) {
-        $session = $veeam->startRestoreSession($json, $id);
-    } else {
-        $session = $veeam->startRestoreSession($json);
-    }
-    
-    $_SESSION['rid'] = $session['id'];
-    $_SESSION['rtype'] = strtolower($session['type']);
-    echo $session['id']; /* Return the Restore Session ID */
-}
-if ($action == 'stoprestore') {
-    $session = $veeam->stopRestoreSession($id);
-    unset($_SESSION['rid']);
-    unset($_SESSION['rtype']);
-}
+	/* Exchange Restore Calls */
+	if ($action == 'exportmailbox') {
+		$veeam->exportMailbox($mailboxid, $rid, $json);
+	}
+	if ($action == 'exportmailitem') {
+		$veeam->exportMailItem($itemid, $mailboxid, $rid, $json);
+	}
+	if ($action == 'exportmultiplemailitems') {
+		$veeam->exportMultipleMailItems($itemid, $mailboxid, $rid, $json);
+	}
+	if ($action == 'restoremailbox') {
+		$veeam->restoreMailbox($mailboxid, $rid, $json);
+	}
+	if ($action == 'restoremailitem') {
+		$veeam->restoreMailItem($itemid, $mailboxid, $rid, $json);
+	}
+	if ($action == 'restoremultiplemailitems') {
+		$veeam->restoreMultipleMailItems($mailboxid, $rid, $json);
+	}
 
-/* Exchange Calls */
-if ($action == 'getmailitems') {
-    $items = $veeam->getMailboxItems($mailboxid, $rid, $folderid, $offset);
-    echo json_encode($items);
-}
+	/* OneDrive Calls */
+	if ($action == 'getonedriveitems') {
+		$items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid, $offset);
+		
+		echo json_encode($items);
+	}
+	if ($action == 'getonedriveitemsbyfolder') {
+		$items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid);
+		
+		echo json_encode($items);
+	}
+	if ($action == 'getonedriveparentfolder') {
+		$items = $veeam->getOneDriveParentFolder($rid, $userid, $type, $folderid);
+		
+		echo json_encode($items);
+	}
 
-/* Exchange Restore Calls */
-if ($action == 'exportmailbox') {
-    $veeam->exportMailbox($mailboxid, $rid, $json);
-}
-if ($action == 'exportmailitem') {
-    $veeam->exportMailItem($itemid, $mailboxid, $rid, $json);
-}
-if ($action == 'exportmultiplemailitems') {
-    $veeam->exportMultipleMailItems($itemid, $mailboxid, $rid, $json);
-}
-if ($action == 'restoremailbox') {
-    $veeam->restoreMailbox($mailboxid, $rid, $json);
-}
-if ($action == 'restoremailitem') {
-    $veeam->restoreMailItem($itemid, $mailboxid, $rid, $json);
-}
-if ($action == 'restoremultiplemailitems') {
-    $veeam->restoreMultipleMailItems($mailboxid, $rid, $json);
-}
+	/* OneDrive Restore Calls */
+	if ($action == 'exportonedrive') {
+		$veeam->exportOneDrive($userid, $rid, $json);
+	}
+	if ($action == 'exportonedriveitem') {
+		$veeam->exportOneDriveItem($itemid, $userid, $rid, $json, $type);
+	}
+	if ($action == 'exportmultipleonedriveitems') {
+		$veeam->exportMultipleOneDriveItems($itemid, $userid, $rid, $json, $type);
+	}
+	if ($action == 'restoreonedrive') {
+		$veeam->restoreOneDrive($userid, $rid, $json);
+	}
+	if ($action == 'restoreonedriveitem') {
+		$veeam->restoreOneDriveItem($itemid, $userid, $rid, $json, $type);
+	}
+	if ($action == 'restoremultipleonedriveitems') {
+		$veeam->restoreMultipleOneDriveItems($userid, $rid, $json);
+	}
 
-/* OneDrive Calls */
-if ($action == 'getonedriveitems') {
-    $items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid, $offset);
-    echo json_encode($items);
-}
-if ($action == 'getonedriveitemsbyfolder') {
-    $items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid);
-    echo json_encode($items);
-}
-if ($action == 'getonedriveparentfolder') {
-    $items = $veeam->getOneDriveParentFolder($rid, $userid, $type, $folderid);
-    echo json_encode($items);
-}
+	/* SharePoint Calls */
+	if ($action == 'getsharepointcontent') {
+		if (isset($folderid)) {
+			$content = $veeam->getSharePointContent($rid, $siteid, $type, $folderid);
+		} else {
+			$content = $veeam->getSharePointContent($rid, $siteid, $type);
+		}
+		
+		echo json_encode($content);
+	}
+	if ($action == 'getsharepointitems') {
+		$items = $veeam->getSharePointTree($rid, $siteid, $folderid, $type, $offset = null);
 
-/* OneDrive Restore Calls */
-if ($action == 'exportonedrive') {
-    $veeam->exportOneDrive($userid, $rid, $json);
-}
-if ($action == 'exportonedriveitem') {
-    $veeam->exportOneDriveItem($itemid, $userid, $rid, $json, $type);
-}
-if ($action == 'exportmultipleonedriveitems') {
-    $veeam->exportMultipleOneDriveItems($itemid, $userid, $rid, $json, $type);
-}
-if ($action == 'restoreonedrive') {
-    $veeam->restoreOneDrive($userid, $rid, $json);
-}
-if ($action == 'restoreonedriveitem') {
-    $veeam->restoreOneDriveItem($itemid, $userid, $rid, $json, $type);
-}
-if ($action == 'restoremultipleonedriveitems') {
-    $veeam->restoreMultipleOneDriveItems($userid, $rid, $json);
-}
+		echo json_encode($items);
+	}
+	if ($action == 'getsharepointparentfolder') {
+		$items = $veeam->getSharePointParentFolder($rid, $siteid, $type, $folderid);
+		
+		echo json_encode($items);
+	}
 
-/* SharePoint Calls */
-if ($action == 'getsharepointcontent') {
-    $users = $veeam->getSharePointContent($rid, $siteid, $type);
-    echo json_encode($users);
-}
-if ($action == 'getsharepointitems') {
-    $items = $veeam->getSharePointTree($rid, $siteid, $folderid, $type, $offset);
-    echo json_encode($items);
-}
-if ($action == 'getsharepointitemsbyfolder') {
-    $items = $veeam->getSharePointTree($rid, $siteid, $folderid, $type);
-    echo json_encode($items);
-}
-if ($action == 'getsharepointparentfolder') {
-    $items = $veeam->getSharePointParentFolder($rid, $siteid, $type, $folderid);
-    echo json_encode($items);
-}
-
-/* SharePoint Restore Calls */
-if ($action == 'exportsharepoint') {
-    $veeam->exportSharePoint($siteid, $rid, $json);
-}
-if ($action == 'exportsharepointitem') {
-    $veeam->exportSharePointItem($itemid, $siteid, $rid, $json, $type);
-}
-if ($action == 'exportmultiplesharepointitems') {
-    $veeam->exportMultipleSharePointItems($itemid, $siteid, $rid, $json, $type);
-}
-if ($action == 'restoresharepoint') {
-    $veeam->restoreSharePoint($siteid, $rid, $json);
-}
-if ($action == 'restoresharepointitem') {
-    $veeam->restoreSharePointItem($itemid, $siteid, $rid, $json, $type);
-}
-if ($action == 'restoremultiplesharepointitems') {
-    $veeam->restoreMultipleSharePointItems($siteid, $rid, $json);
+	/* SharePoint Restore Calls */
+	if ($action == 'exportsharepoint') {
+		$veeam->exportSharePoint($siteid, $rid, $json);
+	}
+	if ($action == 'exportsharepointitem') {
+		$veeam->exportSharePointItem($itemid, $siteid, $rid, $json, $type);
+	}
+	if ($action == 'exportmultiplesharepointitems') {
+		$veeam->exportMultipleSharePointItems($itemid, $siteid, $rid, $json, $type);
+	}
+	if ($action == 'restoresharepoint') {
+		$veeam->restoreSharePoint($siteid, $rid, $json);
+	}
+	if ($action == 'restoresharepointitem') {
+		$veeam->restoreSharePointItem($itemid, $siteid, $rid, $json, $type);
+	}
+	if ($action == 'restoremultiplesharepointitems') {
+		$veeam->restoreMultipleSharePointItems($siteid, $rid, $json);
+	}
+} else {
+	$veeam = new VBO($host, $port, $version);
+	$veeam->logout();
 }
 ?>

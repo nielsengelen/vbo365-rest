@@ -15,29 +15,23 @@ if (!preg_match('/v[3-4]/', $version)) {
 	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 3 and 4 are supported.');
 }
 
-$veeam = new VBO($host, $port, $version);
-
 if (isset($_POST['logout'])) {
+	$veeam = new VBO($host, $port, $version);
     $veeam->logout();
 } else {
     if (!empty($_POST['user'])) { $user = $_POST['user']; }
     if (!empty($_POST['pass'])) { $pass = $_POST['pass']; }
 
     if (isset($user) && isset($pass)) {
+		$veeam = new VBO($host, $port, $version);
         $login = $veeam->login($user, $pass);
-
+		
+		session_regenerate_id();
+		
         $_SESSION['refreshtoken'] = $veeam->getRefreshToken();
         $_SESSION['token'] = $veeam->getToken();
         $_SESSION['user'] = $user;
     }
-}
-
-if (isset($_SESSION['token'])) {
-    $veeam->setToken($_SESSION['token']);
-}
-
-if (isset($_SESSION['refreshtoken'])) {
-	$veeam->refreshToken($_SESSION['refreshtoken']);
 }
 ?>
 <!DOCTYPE html>
@@ -48,12 +42,12 @@ if (isset($_SESSION['refreshtoken'])) {
     <title><?php echo $title; ?></title>
     <base href="/" />
     <link rel="shortcut icon" href="images/favicon.ico" />
-    <link rel="stylesheet" type="text/css" href="vendor/twbs/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="css/fontawesome.min.css" />
     <link rel="stylesheet" type="text/css" href="css/style.css" />
 	<link rel="stylesheet" type="text/css" href="css/sweetalert2.min.css" />	
-    <script src="vendor/components/jquery/jquery.min.js"></script>
-    <script src="vendor/twbs/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
     <script src="js/fontawesome.min.js"></script>
     <script src="js/filesize.min.js"></script>
     <script src="js/moment.min.js"></script>
@@ -61,7 +55,25 @@ if (isset($_SESSION['refreshtoken'])) {
 </head>
 <body>
 <?php
+if (!file_exists('setup.php')) {
+	?>
+	<script>
+	Swal.fire({
+		type: 'error',
+		title: 'Setup file detected',
+		allowOutsideClick: false,
+		showConfirmButton: false,
+		text: 'Setup file is still available within the installation folder. You must remove this file in order to continue.'
+	});
+	</script>
+	<?php
+	die();
+}
+
 if (isset($_SESSION['token'])) {
+	$veeam = new VBO($host, $port, $version);
+    $veeam->setToken($_SESSION['token']);
+	
     $user = $_SESSION['user'];
     $check = filter_var($user, FILTER_VALIDATE_EMAIL);
 
@@ -106,7 +118,6 @@ if (isset($_SESSION['token'])) {
 		</main>
 	</div>
 	<script>
-	/* Logout option */
 	$('#logout').click(function(e) {
 		e.preventDefault();
 		
@@ -134,7 +145,6 @@ if (isset($_SESSION['token'])) {
 		})
 	});
 
-	/* Dashboard menu handler */
 	$('ul.menu li').click(function(e) {
 		var call = $(this).data('call');
 		var id = this.id;
@@ -151,18 +161,19 @@ if (isset($_SESSION['token'])) {
 	});
 	</script>
 	<?php
-	} else { /* We are a tenant */
+	} else {
 		header('Location: /exchange');
 	}
-} else { /* Show login form */
+} else {
 	unset($_SESSION);
+	session_regenerate_id();
     session_destroy();
 ?>
 <section class="login-block">
 	<div class="container login-container">
 		<div class="row">
 			<div class="col-md-4 login-sec">
-				<h2 class="text-center">Login</h2>
+				<h2 class="text-center">Welcome</h2>
 				<form class="login-form" method="post">
 					<div class="form-group">
 						<label for="username" class="text-uppercase">Username:</label>
@@ -177,8 +188,12 @@ if (isset($_SESSION['token'])) {
 					</div>
 					<div class="text-center">
 					<?php
-					if ($login == 'error') {
-						echo '<br /><p class="text-warning">The username or password provided is incorrect.</p>';
+					if (isset($login)) {
+						if ($login == '0') {
+							echo '<br /><p class="text-warning">The provided username or password is incorrect.</p>';
+						} else {
+							echo $login;
+						}
 					}
 					?>
 					</div>

@@ -4,9 +4,8 @@ require_once('../veeam.class.php');
 
 session_start();
 
-$veeam = new VBO($host, $port, $version);
-
 if (isset($_SESSION['token'])) {
+	$veeam = new VBO($host, $port, $version);
 	$veeam->setToken($_SESSION['token']);
     $user = $_SESSION['user'];
 	$jobs = $veeam->getJobs();
@@ -40,16 +39,8 @@ if (isset($_SESSION['token'])) {
 			$id = explode('/', $jobs[$i]['_links']['organization']['href']); // Get the organization ID
 			
 			for ($j = 0; $j < count($org); $j++) {
-				if ($version != 'v2') {
-					if ($org[$j]['id'] === end($id)) {
-						echo '<td>' . $org[$j]['name'] . '</td>';
-					}
-				} else {
-					if ($org[$j]['id'] === end($id)) {
-						echo '<td>' . $org[$j]['name'] . '</td>';
-					} else { /* This only happens with the v2 API requesting organizations which were added by VBO v3 */
-						echo '<td>N/A</td>';
-					}
+				if ($org[$j]['id'] === end($id)) {
+					echo '<td>' . $org[$j]['name'] . '</td>';
 				}
 			}
 
@@ -60,12 +51,12 @@ if (isset($_SESSION['token'])) {
 			echo '<td>';
 			
 			if ($jobs[$i]['isEnabled'] != 'true') {
-				echo '<span id="span-job-' . $jobs[$i]['id'] . '"><button class="btn btn-default" id="btn-change-job-state" data-call="enable" data-name="' . $jobs[$i]['name'] . '" data-jid="' . $jobs[$i]['id'] . '" title="Enable job"><i class="fa fa-power-off text-success fa-lg" aria-hidden="true"></i></button></a></span>&nbsp;';
+				echo '<button class="btn btn-default btn-change-job-state" id="btn-change-job-state-' . $jobs[$i]['id'] . '" data-call="enable" data-name="' . $jobs[$i]['name'] . '" data-jid="' . $jobs[$i]['id'] . '" title="Change state"><i class="fa fa-power-off text-success fa-lg btn-state-' . $jobs[$i]['id'] . '"></i></button></a>';
 			} else {
-				echo '<span id="span-job-' . $jobs[$i]['id'] . '"><button class="btn btn-default" id="btn-change-job-state" data-call="disable" data-name="' . $jobs[$i]['name'] . '" data-jid="' . $jobs[$i]['id'] . '" title="Disable job"><i class="fa fa-power-off text-danger fa-lg"></i></button></a></span>&nbsp;';
+				echo '<button class="btn btn-default btn-change-job-state" id="btn-change-job-state-' . $jobs[$i]['id'] . '" data-call="disable" data-name="' . $jobs[$i]['name'] . '" data-jid="' . $jobs[$i]['id'] . '" title="Change state"><i class="fa fa-power-off text-danger fa-lg btn-state-' . $jobs[$i]['id'] . '"></i></button></a>';
 			}
 			
-			echo '<button class="btn btn-success" id="btn-job-start" data-call="startjob" data-name="' . $jobs[$i]['name'] . '" data-cid="' . $jobs[$i]['id'] . '" title="Start job"><i class="fa fa-play" aria-hidden="true"></i></button></a>&nbsp;';
+			echo '&nbsp;<button class="btn btn-success btn-job-start" data-name="' . $jobs[$i]['name'] . '" data-jid="' . $jobs[$i]['id'] . '" title="Start job"><i class="fa fa-play"></i></button></a>';
 			echo '</td>';
 			echo '</tr>';
 			
@@ -200,7 +191,7 @@ $('.item').click(function(e) {
     var icon, text;
     var id = $(this).data('sessionid');
     
-    $.get('veeam.php', {'action' : 'getbackupsessionlog', 'id' : id}).done(function(data) {
+    $.post('veeam.php', {'action' : 'getbackupsessionlog', 'id' : id}).done(function(data) {
         response = JSON.parse(data);
 
         $('#table-session-content tbody').empty();
@@ -226,43 +217,36 @@ $('.item').click(function(e) {
                     <td>' + moment.utc(duration.asMilliseconds()).format('HH:mm:ss') + '</td> \
                     </tr>');
         }
-                
+        
         $('#sessionModalCenter').modal('show');
     });
 });
 
 /* Job Buttons */
-$('#btn-change-job-state').click(function(e) {
+$('.btn-change-job-state').click(function(e) {
     var jid = $(this).data('jid'); /* Job ID */
     var name = $(this).data('name'); /* Job name */
     var call = $(this).data('call'); /* Job call: enable or disable */
     var json = '{ "'+call+'": null }';
-    
-    $.get('veeam.php', {'action' : 'changejobstate', 'id' : jid, 'json' : json}).done(function(data) {              
-        if (call == 'enable') {
-            $('#span-job-' + jid).html('<button class="btn btn-default" id="btn-change-job-state" data-call="disable" data-name="' + name + '" data-jid="' + jid + '" title="Disable job"><i class="fa fa-power-off text-danger fa-lg" aria-hidden="true"></i></button></a>&nbsp;');
-			Swal.fire({
-				type: 'info',
-				title: 'Job status',
-				text: 'Job ' + name + ' has been ' + call + 'd.'
-			})
-        } else {
-            $('#span-job-' + jid).html('<button class="btn btn-default" id="btn-change-job-state" data-call="enable" data-name="' + name + '" data-jid="' + jid + '" title="Enable job"><i class="fa fa-power-off text-success fa-lg" aria-hidden="true"></i></button></a>&nbsp;');
-            Swal.fire({
-				type: 'info',
-				title: 'Job status',
-				text: 'Job ' + name + ' has been ' + call + 'd.'
-			})
-        }
-    });
+
+    $.post('veeam.php', {'action' : 'changejobstate', 'id' : jid, 'json' : json}).done(function(data) {
+		if (call == 'enable') {
+			$('#btn-change-job-state-'+jid).data('call', 'disable');
+			$('.btn-state-'+jid).removeClass('text-success');
+			$('.btn-state-'+jid).addClass('text-danger');
+		} else {			
+			$('#btn-change-job-state-'+jid).data('call', 'enable');
+			$('.btn-state-'+jid).addClass('text-success');
+			$('.btn-state-'+jid).removeClass('text-danger');
+		}			
+	});
 });
 
-$('#btn-job-start').click(function(e) {
-    var action = $(this).data('call'); /* Action to perform: start or stop */
-    var id = $(this).data('cid'); /* Job ID */
+$('.btn-job-start').click(function(e) {
+    var id = $(this).data('jid'); /* Job ID */
     var name = $(this).data('name'); /* Job name */
     
-    $.get('veeam.php', {'action' : action, 'id' : id}).done(function(data) {
+    $.post('veeam.php', {'action' : 'startjob', 'id' : id}).done(function(data) {
 		Swal.fire({
 			type: 'info',
 			title: 'Job status',
