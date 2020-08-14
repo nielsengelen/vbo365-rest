@@ -325,17 +325,12 @@ if (isset($_SESSION['token'])) {
 										<td>
 											<input type="text" class="form-control search" id="jstree_q" placeholder="Search a folder...">
 											<div id="jstree">
-												<ul>
-													<li data-folderid="<?php echo $cid; ?>" data-jstree='{ "opened" : true, "selected": true }'>
-														<?php echo $list["name"]; ?>
-														<ul>
-														<?php
-														for ($i = 0; $i < count($folders['results']); $i++) {
-															echo '<li data-folderid="'.$folders['results'][$i]['id'].'"  data-jstree=\'{ "opened" : true }\'>'.$folders['results'][$i]['name'].'</li>';
-														}
-														?>
-														</ul>
-													</li>
+												<ul>													
+													<?php
+													for ($i = 0; $i < count($folders['results']); $i++) {
+														echo '<li data-folderid="'.$folders['results'][$i]['id'].'"  data-jstree=\'{ "opened" : true }\'>'.$folders['results'][$i]['name'].'</li>';
+													}
+													?>													
 												</ul>
 											</div>
 											<script>
