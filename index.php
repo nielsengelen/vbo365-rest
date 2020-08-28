@@ -55,7 +55,7 @@ if (isset($_POST['logout'])) {
 </head>
 <body>
 <?php
-if (!file_exists('setup.php')) {
+if (file_exists('setup.php')) {
 	?>
 	<script>
 	Swal.fire({
@@ -190,7 +190,7 @@ if (isset($_SESSION['token'])) {
 					<?php
 					if (isset($login)) {
 						if ($login == '0') {
-							echo '<br /><p class="text-warning">The provided username or password is incorrect.</p>';
+							echo '<br><p class="text-warning">The provided username or password is incorrect.</p>';
 						} else {
 							echo $login;
 						}
