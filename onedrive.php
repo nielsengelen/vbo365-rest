@@ -301,10 +301,10 @@ if (isset($_SESSION['token'])) {
 								<button class="btn btn-default dropdown-toggle form-control" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Restore selected <span class="caret"></span></button>
 								<ul class="dropdown-menu dropdown-menu-right">
 								  <li class="dropdown-header">Download as</li>
-								  <li><a class="dropdown-link download-zip" data-itemid="multipleexport" data-itemname="<?php echo $owner['name']; ?>" data-type="multiple" data-userid="<?php echo $uid; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> ZIP file</a></li>
+								  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadZIP('documents', 'multipleexport', '<?php echo $owner['name']; ?>', '<?php echo $uid; ?>', 'multiple')"><i class="fa fa-download"></i> ZIP file</a></li>
 								  <li class="divider"></li>
 								  <li class="dropdown-header">Restore to</li>
-								  <li><a class="dropdown-link restore-original" data-itemid="multiplerestore" data-type="multiple" data-userid="<?php echo $uid; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
+								  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('documents', 'multiplerestore', '<?php echo $uid; ?>', 'multiple')"><i class="fa fa-upload"></i> Original location</a></li>
 								</ul>
 							</div>
 						</div>
@@ -401,10 +401,10 @@ if (isset($_SESSION['token'])) {
 												<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button>
 												<ul class="dropdown-menu dropdown-menu-right">
 												  <li class="dropdown-header">Download as</li>
-												  <li><a class="dropdown-link download-zip" data-itemid="<?php echo $folders['results'][$i]['id']; ?>" data-itemname="<?php echo $folders['results'][$i]['name']; ?>" data-filetype="folders" data-type="single" data-userid="<?php echo $uid; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> ZIP file</a></li>
+												  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadZIP('folders', '<?php echo $folders['results'][$i]['id']; ?>', '<?php echo $folders['results'][$i]['name']; ?>', '<?php echo $uid; ?>', 'single')"><i class="fa fa-download"></i> ZIP file</a></li>
 												  <li class="divider"></li>
 												  <li class="dropdown-header">Restore to</li>
-												  <li><a class="dropdown-link restore-original" data-itemid="<?php echo $folders['results'][$i]['id']; ?>" data-filetype="folders" data-type="single" data-userid="<?php echo $uid; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
+												  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('folders', '<?php echo $folders['results'][$i]['id']; ?>', '<?php echo $uid; ?>', 'single')"><i class="fa fa-upload"></i> Original location</a></li>
 												</ul>
 											</div>
 										</td>
@@ -425,11 +425,11 @@ if (isset($_SESSION['token'])) {
 												<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button>
 												<ul class="dropdown-menu dropdown-menu-right">
 												  <li class="dropdown-header">Download as</li>
-												  <li><a class="dropdown-link download-file" data-itemid="<?php echo $documents['results'][$i]['id']; ?>" data-itemname="<?php echo $documents['results'][$i]['name']; ?>" data-filetype="documents" data-type="single" data-userid="<?php echo $uid; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> Plain file</a></li>
-												  <li><a class="dropdown-link download-zip" data-itemid="<?php echo $documents['results'][$i]['id']; ?>" data-itemname="<?php echo $documents['results'][$i]['name']; ?>" data-filetype="documents" data-type="single" data-userid="<?php echo $uid; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> ZIP file</a></li>
+												  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadFile('documents', '<?php echo $documents['results'][$i]['id']; ?>', '<?php echo $documents['results'][$i]['name']; ?>', '<?php echo $uid; ?>')"><i class="fa fa-download"></i> Plain file</a></li>
+												  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadZIP('documents', '<?php echo $documents['results'][$i]['id']; ?>', '<?php echo $documents['results'][$i]['name']; ?>', '<?php echo $uid; ?>', 'single')"><i class="fa fa-download"></i> ZIP file</a></li>
 												  <li class="divider"></li>
 												  <li class="dropdown-header">Restore to</li>
-												  <li><a class="dropdown-link restore-original" data-itemid="<?php echo $documents['results'][$i]['id']; ?>" data-filetype="documents" data-type="single" data-userid="<?php echo $uid; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
+												  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('documents', '<?php echo $documents['results'][$i]['id']; ?>', '<?php echo $uid; ?>', 'single')"><i class="fa fa-upload"></i> Original location</a></li>
 												</ul>
 											</div>
 										</td>
@@ -488,10 +488,10 @@ if (isset($_SESSION['token'])) {
 											<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button>
 											<ul class="dropdown-menu dropdown-menu-right">
 											  <li class="dropdown-header">Download as</li>
-											  <li><a class="dropdown-link download-zip" data-itemid="<?php echo $value['name']; ?>" data-itemname="<?php echo $value['name']; ?>" data-type="full" data-userid="<?php echo $value['id']; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> ZIP file</a></li>
+											  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadZIP('documents', '<?php echo $value['name']; ?>', '<?php echo $value['name']; ?>', '<?php echo $value['id']; ?>', 'full')"><i class="fa fa-download"></i> ZIP file</a></li>
 											  <li class="divider"></li>
 											  <li class="dropdown-header">Restore to</li>
-											  <li><a class="dropdown-link restore-original" data-itemid="<?php echo $value['name']; ?>" data-type="full" data-userid="<?php echo $value['id']; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
+											  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('documents', '<?php echo $value['name']; ?>', '<?php echo $value['id']; ?>', 'full')"><i class="fa fa-upload"></i> Original location</a></li>
 											</ul>
 										</div>
 									</td>
@@ -575,8 +575,6 @@ $('.btn-start-restore').click(function(e) {
 
     $.post('veeam.php', {'action' : 'startrestore', 'json' : json, 'id' : oid}).done(function(data) {
         if (data.match(/([a-zA-Z0-9]{8})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{12})/g)) {
-            e.preventDefault();
-
 			Swal.fire({
 				type: 'success',
 				title: 'Session started',
@@ -597,8 +595,6 @@ $('.btn-start-restore').click(function(e) {
 });
 $('.btn-stop-restore').click(function(e) {
     var rid = '<?php echo $rid; ?>';
-
-    e.preventDefault();
 
     const swalWithBootstrapButtons = Swal.mixin({
 	  confirmButtonClass: 'btn btn-success btn-margin',
@@ -676,11 +672,7 @@ $('.load-more-link').click(function(e) {
 });
 
 /* Export to file */
-$('.download-file').click(function(e) {
-    var filetype = $(this).data('filetype');
-	var itemid = $(this).data('itemid');
-    var filename = $(this).data('itemname');
-    var userid = $(this).data('userid');
+function downloadFile(filetype, itemid, itemname, userid) {
     var rid = '<?php echo $rid; ?>';
 	var json = '{ "save": { "asZip": "false" } }';
 	
@@ -691,10 +683,8 @@ $('.download-file').click(function(e) {
 	})
 
 	$.post('veeam.php', {'action' : 'exportonedriveitem', 'itemid' : itemid, 'userid' : userid, 'rid' : rid, 'json' : json, 'type' : filetype}).done(function(data) {
-		e.preventDefault();
-
 		if (data) {
-			$.redirect('download.php', {ext : 'plain', file : data, name : filename}, 'POST');
+			$.redirect('download.php', {ext : 'plain', file : data, name : itemname}, 'POST');
 			
 			Swal.close();
 		} else {
@@ -706,15 +696,12 @@ $('.download-file').click(function(e) {
 			return;
 		}
 	});
-});
+}
 
 /* Export to ZIP file */
-$('.download-zip').click(function(e) {
-	var itemid = $(this).data('itemid');
-    var filename = $(this).data('itemname');
-    var userid = $(this).data('userid');
+function downloadZIP(filetype, itemid, itemname, userid, type) {
+    var filename = itemname;
     var rid = '<?php echo $rid; ?>';
-	var type = $(this).data('type');
 
 	Swal.fire({
 		type: 'info',
@@ -726,7 +713,7 @@ $('.download-zip').click(function(e) {
 		var act = 'exportmultipleonedriveitems';
 		var filetype = 'documents';
 		var ids = '';
-		var filename = 'exported-onedriveitems-' + $(this).data('itemname');
+		var filename = 'exported-onedriveitems-' + itemname;
 		
 		if ($("input[name='checkbox-onedrive']:checked").length === 0) { /* Error handling for multiple export button */
 			Swal.close();
@@ -755,19 +742,15 @@ $('.download-zip').click(function(e) {
 	} else {
 		if (type == 'single') {	/* Single item export */
 			var act = 'exportonedriveitem';
-			var filename = $(this).data('itemname');
 		} else { /* Full OneDrive export */
 			var act = 'exportonedrive';
-			var filename = 'onedrive-' + $(this).data('itemname'); /* onedrive-username */
+			var filename = 'onedrive-' + itemname; /* onedrive-username */
 		}
 		
-		var filetype = $(this).data('filetype');
 		var json = '{ "save": { "asZip": "true" } }';
 	}
 
 	$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'userid' : userid, 'rid' : rid, 'json' : json, 'type' : filetype}).done(function(data) {
-		e.preventDefault();
-
 		if (data && data != '500') {
 			$.redirect('download.php', {ext : 'zip', file : data, name : filename}, 'POST');
 			
@@ -782,15 +765,11 @@ $('.download-zip').click(function(e) {
 			return;
 		}
 	});
-});
+}
 
 /* Restore to original location */
-$('.restore-original').click(function(e) {
-	var filetype = $(this).data('filetype');
-	var itemid = $(this).data('itemid');
-    var userid = $(this).data('userid');
+function restoreToOriginal(filetype, itemid, userid, type) {
     var rid = '<?php echo $rid; ?>';
-	var type = $(this).data('type');
 	
 	if (type == 'multiple' && $("input[name='checkbox-onedrive']:checked").length == 0) { /* Error handling for multiple restore button */
 		Swal.fire({
@@ -872,7 +851,6 @@ $('.restore-original').click(function(e) {
 			
 			if (type == 'multiple') { /* Multiple items restore */
 				var act = 'restoremultipleonedriveitems';
-				filetype = 'documents';
 				var ids = '';
 				
 				$("input[name='checkbox-onedrive']:checked").each(function(e) {
@@ -916,7 +894,7 @@ $('.restore-original').click(function(e) {
 			return;
 		}
 	});
-});
+}
 
 function disableTree() {
   $('#jstree li.jstree-node').each(function(e) {
@@ -952,11 +930,11 @@ function fillTableDocuments(response, userid) {
                 <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
                 <ul class="dropdown-menu dropdown-menu-right"> \
                 <li class="dropdown-header">Download as</li> \
-                <li><a class="dropdown-link download-file" data-itemid="' + response.results[i].id + '" data-itemname="' + response.results[i].id + '" data-filetype="documents" data-type="single" data-userid="' + userid + '" href="' + window.location + '"><i class="fa fa-download"></i> Plain file</a></li> \
-                <li><a class="dropdown-link download-zip" data-itemid="' + response.results[i].id + '" data-itemname="' + response.results[i].id + '" data-filetype="documents" data-type="single" data-userid="' + userid + '" href="' + window.location + '"><i class="fa fa-download"></i> ZIP file</a></li> \
+                <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadFile(\'documents\', \'' + response.results[i].id + '\', \'' + response.results[i].name + '\', \'' + userid + '\')"><i class="fa fa-download"></i> Plain file</a></li> \
+				<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadZIP(\'documents\', \'' + response.results[i].id + '\', \'' + response.results[i].name + '\', \'' + userid + '\', \'single\')"><i class="fa fa-download"></i> ZIP file</a></li> \
                 <li class="divider"></li> \
                 <li class="dropdown-header">Restore to</li> \
-                <li><a class="dropdown-link restore-original" data-itemid="' + response.results[i].id + '" data-filetype="documents" data-type="single" data-userid="' + userid + '" href="' + window.location + '"><i class="fa fa-upload"></i> Original location</a></li> \
+				<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'documents\', \'' + response.results[i].id + '\', \'' + userid + '\', \'single\')"><i class="fa fa-upload"></i> Original location</a></li> \
                 </ul> \
                 </div> \
                 </td> \
@@ -979,11 +957,10 @@ function fillTableFolders(response, folderid, userid) {
                 <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
                 <ul class="dropdown-menu dropdown-menu-right"> \
                 <li class="dropdown-header">Download as</li> \
-                <li><a class="dropdown-link download-file" data-itemid="' + response.results[i].id + '" data-itemname="' + response.results[i].id + '" data-filetype="folders" data-type="single" data-userid="' + userid + '" href="' + window.location + '"><i class="fa fa-download"></i> Plain file</a></li> \
-                <li><a class="dropdown-link download-zip" data-itemid="' + response.results[i].id + '" data-itemname="' + response.results[i].id + '" data-filetype="folders" data-type="single" data-userid="' + userid + '" href="' + window.location + '"><i class="fa fa-download"></i> ZIP file</a></li> \
+				<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadZIP(\'folders\', \'' + response.results[i].id + '\', \'' + response.results[i].name + '\', \'' + userid + '\', \'single\')"><i class="fa fa-download"></i> ZIP file</a></li> \
                 <li class="divider"></li> \
                 <li class="dropdown-header">Restore to</li> \
-                <li><a class="dropdown-link restore-original" data-itemid="' + response.results[i].id + '" data-filetype="folders" data-type="single" data-userid="' + userid + '" href="' + window.location + '"><i class="fa fa-upload"></i> Original location</a></li> \
+				<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'folders\', \'' + response.results[i].id + '\', \'' + userid + '\', \'single\')"><i class="fa fa-upload"></i> Original location</a></li> \
                 </ul> \
                 </div> \
                 </td> \

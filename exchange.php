@@ -309,11 +309,11 @@ if (isset($_SESSION['token'])) {
 								<button class="btn btn-default dropdown-toggle form-control" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Restore selected <span class="caret"></span></button>
 								<ul class="dropdown-menu dropdown-menu-right">
 								  <li class="dropdown-header">Download as</li>
-								  <li><a class="dropdown-link download-pst" data-itemid="multipleexport" data-mailboxid="<?php echo $uid; ?>" data-mailsubject="<?php echo $owner['name']; ?>" data-type="multiple" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> PST file</a></li>
+								  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST('multipleexport', '<?php echo $uid; ?>', '<?php echo $owner['name']; ?>', 'multiple')"><i class="fa fa-download"></i> PST file</a></li>
 								  <li class="divider"></li>
 								  <li class="dropdown-header">Restore to</li>
-								  <li><a class="dropdown-link restore-original" data-itemid="multiplerestore" data-mailboxid="<?php echo $uid; ?>" data-type="multiple" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
-								  <li><a class="dropdown-link restore-different" data-itemid="multiplerestore" data-mailboxid="<?php echo $uid; ?>" data-type="multiple" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Different location</a></li>
+								  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('multiplerestore', '<?php echo $uid; ?>', 'multiple')"><i class="fa fa-upload"></i> Original location</a></li>
+								  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent('multiplerestore', '<?php echo $uid; ?>', 'multiple')"><i class="fa fa-upload"></i> Different location</a></li>
 								</ul>
 							</div>
 						</div>
@@ -363,7 +363,7 @@ if (isset($_SESSION['token'])) {
 												</ul>
 											</div>
 											<script>
-											$(function () {
+											$(function() {
 												$('#jstree').jstree({ 
 													core: {
 													  check_callback: true
@@ -373,19 +373,19 @@ if (isset($_SESSION['token'])) {
 												
 												var to = false;
 												
-												$('#jstree_q').keyup(function (e) {
+												$('#jstree_q').keyup(function(e) {
 													if (to) { 
 														clearTimeout(to); 
 													}
 													
-													to = setTimeout(function (e) {
+													to = setTimeout(function(e) {
 														var v = $('#jstree_q').val();
 														
 														$('#jstree').jstree(true).search(v);
 													}, 250);
 												});
 												
-												$('#jstree').on('activate_node.jstree', function (e, data) {
+												$('#jstree').on('activate_node.jstree', function(e, data) {
 													if (data == undefined || data.node == undefined || data.node.id == undefined || data.node.data.folderid == undefined)
 														return;
 
@@ -459,11 +459,11 @@ if (isset($_SESSION['token'])) {
 										<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button>
 										<ul class="dropdown-menu dropdown-menu-right">
 										  <li class="dropdown-header">Download as</li>
-										  <li><a class="dropdown-link download-pst" data-itemid="<?php echo $value['name']; ?>" data-mailsubject="<?php echo $value['name']; ?>" data-mailboxid="<?php echo $value['id']; ?>" data-type="full" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-download"></i> PST file</a></li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST('<?php echo $value['name']; ?>', '<?php echo $value['id']; ?>', '<?php echo $value['name']; ?>', 'full')"><i class="fa fa-download"></i> PST file</a></li>
 										  <li class="divider"></li>
 										  <li class="dropdown-header">Restore to</li>
-										  <li><a class="dropdown-link restore-original" data-itemid="<?php echo $value['name']; ?>" data-mailboxid="<?php echo $value['id']; ?>" data-type="full" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Original location</a></li>
-										  <li><a class="dropdown-link restore-different" data-itemid="<?php echo $value['name']; ?>" data-mailboxid="<?php echo $value['id']; ?>" data-type="full" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"><i class="fa fa-upload"></i> Different location</a></li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('<?php echo $value['name']; ?>', '<?php echo $value['id']; ?>', 'full')"><i class="fa fa-upload"></i> Original location</a></li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent('<?php echo $value['name']; ?>', '<?php echo $value['id']; ?>', 'full')"><i class="fa fa-upload"></i> Different location</a></li>
 										</ul>
 									</div>
 								</td>
@@ -547,8 +547,6 @@ $('.btn-start-restore').click(function(e) {
 
     $.post('veeam.php', {'action' : 'startrestore', 'json' : json, 'id' : oid}).done(function(data) {
         if (data.match(/([a-zA-Z0-9]{8})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{12})/g)) {
-            e.preventDefault();
-
 			Swal.fire({
 				type: 'success',
 				title: 'Session started',
@@ -569,8 +567,6 @@ $('.btn-start-restore').click(function(e) {
 });
 $('.btn-stop-restore').click(function(e) {
     var rid = '<?php echo $rid; ?>';
-
-    e.preventDefault();
 
 	const swalWithBootstrapButtons = Swal.mixin({
 	  confirmButtonClass: 'btn btn-success btn-margin',
@@ -647,12 +643,9 @@ $('.load-more-link').click(function(e) {
 });
 
 /* Export to MSG file */
-$('.download-msg').click(function(e) {
-    var itemid = $(this).data('itemid');
-    var mailboxid = $(this).data('mailboxid');
+function downloadMsg(itemid, mailboxid, mailsubject) {
     var rid = '<?php echo $rid; ?>';
     var json = '{ "savetoMsg": null }';
-    var mailsubject = $(this).data('mailsubject');
 	
 	Swal.fire({
 		type: 'info',
@@ -660,9 +653,7 @@ $('.download-msg').click(function(e) {
 		text: 'Download will start soon.'
 	})
     
-	$.post('veeam.php', {'action': 'exportmailitem', 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
-		e.preventDefault();
-		
+	$.post('veeam.php', {'action': 'exportmailitem', 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {	
 		if (data) {
 			$.redirect('download.php', {ext : 'msg', file : data, name : mailsubject}, 'POST');
 		} else {
@@ -674,14 +665,11 @@ $('.download-msg').click(function(e) {
 			return;
 		}
 	});
-});
+}
 
 /* Export to PST file */
-$('.download-pst').click(function(e) {
-	var itemid = $(this).data('itemid');
-    var mailboxid = $(this).data('mailboxid');
+function downloadPST(itemid, mailboxid, mailsubject, type) {
     var rid = '<?php echo $rid; ?>';
-	var type = $(this).data('type');
 	
 	Swal.fire({
 		type: 'info',
@@ -692,7 +680,7 @@ $('.download-pst').click(function(e) {
 	if (type == 'multiple') { /* Multiple items export */
 		var act = 'exportmultiplemailitems';
 		var ids = '';
-		var mailsubject = 'exported-mailitems-' + $(this).data('mailsubject');
+		var mailsubject = 'exported-mailitems-' + mailsubject;
 		
 		if ($("input[name='checkbox-mail']:checked").length === 0) { /* Error handling for multiple export button */
 			Swal.close();
@@ -721,10 +709,9 @@ $('.download-pst').click(function(e) {
 	} else {
 		if (type == 'single') {	/* Single item export */
 			var act = 'exportmailitem';
-			var mailsubject = $(this).data('mailsubject');
 		} else { /* Full mailbox export */
 			var act = 'exportmailbox';
-			var mailsubject = 'mailbox-' + $(this).data('mailsubject'); /* mailbox-username */
+			var mailsubject = 'mailbox-' + mailsubject; /* mailbox-username */
 		}
 		
 		var json = '{ \
@@ -734,9 +721,7 @@ $('.download-pst').click(function(e) {
 		}';
 	}
 
-	$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
-		e.preventDefault();
-		
+	$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {		
 		if (data && data != '500') {
 			$.redirect('download.php', {ext : 'pst', file : data, name : mailsubject}, 'POST');
 				
@@ -751,14 +736,11 @@ $('.download-pst').click(function(e) {
 			
 		return;
 	});
-});
+}
 
 /* Restore to a different location */
-$('.restore-different').click(function(e) {
-	var itemid = $(this).data('itemid');
-    var mailboxid = $(this).data('mailboxid');
+function restoreToDifferent(itemid, mailboxid, type) {
     var rid = '<?php echo $rid; ?>';
-	var type = $(this).data('type');
 	
 	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) { /* Error handling for multiple restore button */
 		Swal.fire({
@@ -799,7 +781,7 @@ $('.restore-different').click(function(e) {
 			'<div class="form-group row">' + 
 			'<label for="restore-different-folder" class="col-sm-4 col-form-label text-right">Folder:</label>' +
 			'<div class="col-sm-8"><input type="text" class="form-control" id="restore-different-folder" placeholder="Custom folder (optional)"></input></div>' +
-			'<br /><h6>By default items will be restored in a folder named <em>Restored-via-web-client</em>.</h6>' +
+			'<br><h6>By default items will be restored in a folder named <em>Restored-via-web-client</em>.</h6>' +
 			'</div>' +
 			'</form>',
 		focusConfirm: false,
@@ -912,15 +894,12 @@ $('.restore-different').click(function(e) {
 			return;
 		}
 	});
-}); 
+} 
 
 /* Restore to original location */
-$('.restore-original').click(function(e) {
-	var itemid = $(this).data('itemid');
-    var mailboxid = $(this).data('mailboxid');
+function restoreToOriginal(itemid, mailboxid, type) {
     var rid = '<?php echo $rid; ?>';
-	var type = $(this).data('type');
-
+console.log(type);
 	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) { /* Error handling for multiple restore button */
 		Swal.fire({
 			type: 'error',
@@ -1030,7 +1009,7 @@ $('.restore-original').click(function(e) {
 			return;
 		}
 	});
-});
+}
 
 function disableTree() {
   $('#jstree li.jstree-node').each(function(e) {
@@ -1053,7 +1032,10 @@ function enableTree() {
 function fillTable(response, mailboxid) {
     if (response.results.length !== 0) {
 		for (var i = 0; i < response.results.length; i++) {
-			if (response.results[i].itemClass != 'IPM.Appointment') { 
+			if (response.results[i].itemClass != 'IPM.Appointment') {
+				var itemid = response.results[i].id;
+				var mailsubject = response.results[i].subject;
+				
 				$('#table-exchange-items tbody').append('<tr> \
 					<td class="text-center"><input type="checkbox" name="checkbox-mail" value="' + response.results[i].id + '"></td> \
 					<td class="text-center"><span class="logo fa fa-envelope"></span></td> \
@@ -1065,12 +1047,12 @@ function fillTable(response, mailboxid) {
 					<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
 					<ul class="dropdown-menu dropdown-menu-right"> \
 					<li class="dropdown-header">Download as</li> \
-					<li><a class="dropdown-link download-msg" data-itemid="' + response.results[i].id + '" data-mailsubject="' + response.results[i].subject + '" data-mailboxid="' + mailboxid + '" href="' + window.location + '"><i class="fa fa-download"></i> MSG file</a></li> \
-					<li><a class="dropdown-link download-pst" data-itemid="' + response.results[i].id + '" data-mailsubject="' + response.results[i].subject + '" data-mailboxid="' + mailboxid + '" data-type="single" href="' + window.location + '"><i class="fa fa-download"></i> PST file</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadMsg(\'' + itemid + '\', \'' + mailboxid + '\', \'' + mailsubject + '\')"><i class="fa fa-download"></i> MSG file</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST(\'' + itemid + '\', \'' + mailboxid + '\', \'' + mailsubject + '\', \'single\')"><i class="fa fa-download"></i> PST file</a></li> \
 					<li class="divider"></li> \
 					<li class="dropdown-header">Restore to</li> \
-					<li><a class="dropdown-link restore-original" data-itemid="' + response.results[i].id + '" data-mailboxid="' + mailboxid + '" data-type="single" href="' + window.location + '"><i class="fa fa-upload"></i> Original location</a></li> \
-					<li><a class="dropdown-link restore-different" data-itemid="' + response.results[i].id + '" data-mailboxid="' + mailboxid + '" data-type="single" href="' + window.location + '"><i class="fa fa-upload"></i> Different location</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + itemid + '\', \'' + mailboxid + '\', \'single\')"><i class="fa fa-upload"></i> Original location</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent(\'' + itemid + '\', \'' + mailboxid + '\', \'single\')"><i class="fa fa-upload"></i> Different location</a></li> \
 					</ul> \
 					</div> \
 					</td> \
@@ -1087,12 +1069,12 @@ function fillTable(response, mailboxid) {
 					<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
 					<ul class="dropdown-menu dropdown-menu-right"> \
 					<li class="dropdown-header">Download as</li> \
-					<li><a class="dropdown-link download-msg" data-itemid="' + response.results[i].id + '" data-mailsubject="' + response.results[i].subject + '" data-mailboxid="' + mailboxid + '" href="' + window.location + '"><i class="fa fa-download"></i> MSG file</a></li> \
-					<li><a class="dropdown-link download-pst" data-itemid="' + response.results[i].id + '" data-mailsubject="' + response.results[i].subject + '" data-mailboxid="' + mailboxid + '" data-type="single" href="' + window.location + '"><i class="fa fa-download"></i> PST file</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadMsg(\'' + itemid + '\', \'' + mailboxid + '\', \'' + mailsubject + '\')"><i class="fa fa-download"></i> MSG file</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST(\'' + itemid + '\', \'' + mailboxid + '\', \'' + mailsubject + '\', \'single\')"><i class="fa fa-download"></i> PST file</a></li> \
 					<li class="divider"></li> \
 					<li class="dropdown-header">Restore to</li> \
-					<li><a class="dropdown-link restore-original" data-itemid="' + response.results[i].id + '" data-mailboxid="' + mailboxid + '" data-type="single" href="' + window.location + '"><i class="fa fa-upload"></i> Original location</a></li> \
-					<li><a class="dropdown-link restore-different" data-itemid="' + response.results[i].id + '" data-mailboxid="' + mailboxid + '" data-type="single" href="' + window.location + '"><i class="fa fa-upload"></i> Different location</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + itemid + '\', \'' + mailboxid + '\', \'single\')"><i class="fa fa-upload"></i> Original location</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent(\'' + itemid + '\', \'' + mailboxid + '\', \'single\')"><i class="fa fa-upload"></i> Different location</a></li> \
 					</ul> \
 					</div> \
 					</td> \
