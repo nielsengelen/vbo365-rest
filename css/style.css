@@ -41,6 +41,9 @@ h1, h2, h3, h4, h5 {
   width: 210px;
 }
 #sidebar,
+#sidebar a.load-more-link {
+  color: #000000;
+}
 #sidebar a {
   color: #ABB4BE;
 }
@@ -60,6 +63,9 @@ h1, h2, h3, h4, h5 {
   position: relative;
   padding: 10px;
   text-indent: 1px;
+}
+#sidebar .menu {
+  color: #ABB4BE;
 }
 #sidebar .menu-segment {
   padding-left: 5px;

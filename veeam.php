@@ -97,13 +97,22 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 	}
 
 	/* Exchange Calls */
+	if ($action == 'getmailboxes') {
+		$mailboxes = $veeam->getMailboxes($rid, $offset);
+		
+		echo json_encode($mailboxes);
+	}
 	if ($action == 'getmailitems') {
 		$items = $veeam->getMailboxItems($mailboxid, $rid, $folderid, $offset = null);
 		
 		echo json_encode($items);
 	}
-	if ($action == 'getmailfolders') {
-		$folders = $veeam->getMailboxFolders($mailboxid, $rid, $folderid);
+	if ($action == 'getmailboxfolders') {
+		if (isset($folderid)) {
+			$folders = $veeam->getMailboxFolders($mailboxid, $rid, $offset, $folderid, $limit);
+		} else {
+			$folders = $veeam->getMailboxFolders($mailboxid, $rid, $offset);
+		}
 		
 		echo json_encode($folders);
 	}
@@ -129,6 +138,16 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 	}
 
 	/* OneDrive Calls */
+	if ($action == 'getonedriveaccounts') {
+		$accounts = $veeam->getOneDrives($rid, $offset);
+		
+		echo json_encode($accounts);
+	}
+	if ($action == 'getonedrivefolders') {
+		$folders = $veeam->getOneDriveFolders($rid, $userid, $folderid, $offset);
+		
+		echo json_encode($folders);
+	}
 	if ($action == 'getonedriveitems') {
 		$items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid, $offset);
 		
@@ -136,11 +155,6 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 	}
 	if ($action == 'getonedriveitemsbyfolder') {
 		$items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid);
-		
-		echo json_encode($items);
-	}
-	if ($action == 'getonedriveparentfolder') {
-		$items = $veeam->getOneDriveParentFolder($rid, $userid, $type, $folderid);
 		
 		echo json_encode($items);
 	}
@@ -166,24 +180,25 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 	}
 
 	/* SharePoint Calls */
-	if ($action == 'getsharepointcontent') {
-		if (isset($folderid)) {
-			$content = $veeam->getSharePointContent($rid, $siteid, $type, $folderid);
-		} else {
-			$content = $veeam->getSharePointContent($rid, $siteid, $type);
-		}
-		
-		echo json_encode($content);
-	}
 	if ($action == 'getsharepointitems') {
-		$items = $veeam->getSharePointTree($rid, $siteid, $folderid, $type, $offset = null);
+		$items = $veeam->getSharePointItems($rid, $siteid, $folderid, $type, $offset);
 
 		echo json_encode($items);
 	}
-	if ($action == 'getsharepointparentfolder') {
-		$items = $veeam->getSharePointParentFolder($rid, $siteid, $type, $folderid);
+	if ($action == 'getsharepointfolders') {
+		$folders = $veeam->getSharePointFolders($rid, $siteid, $folderid, $offset);
 		
-		echo json_encode($items);
+		echo json_encode($folders);
+	}
+	if ($action == 'getsharepointcontent') {
+		$content = $veeam->getSharePointContent($rid, $siteid, $type, $offset);
+		
+		echo json_encode($content);
+	}
+	if ($action == 'getsharepointsites') {
+		$sites = $veeam->getSharePointSites($rid, $offset);
+		
+		echo json_encode($sites);
 	}
 
 	/* SharePoint Restore Calls */

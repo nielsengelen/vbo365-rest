@@ -60,7 +60,7 @@ if (isset($_SESSION['token'])) {
 	</ul>
 </nav>
 <div class="container-fluid">
-	<link rel="stylesheet" href="css/exchange.css" />
+	<link rel="stylesheet" type="text/css" href="css/exchange.css" />
 	<aside id="sidebar">
 		<div class="logo-container"><i class="logo fa fa-envelope"></i></div>
 		<div class="separator"></div>
@@ -99,9 +99,9 @@ if (isset($_SESSION['token'])) {
 				$uid = $_GET['uid'];
 				$content = array();
 				$org = $veeam->getOrganizationID($rid);
-				$users = $veeam->getMailbox($rid);
+				$users = $veeam->getMailboxes($rid);
 
-				if ($users == '500') { /* Restore session has expired or was killed */
+				if ($users == '500') {
 					unset($_SESSION['rid']);
 					?>
 					<script>
@@ -136,6 +136,12 @@ if (isset($_SESSION['token'])) {
 					}
 					
 					echo '</ul>';
+
+					if (count($users['results']) >= 50) {
+						echo '<div class="text-center">';
+						echo '<a class="btn btn-default load-more-link load-more-mailboxes" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more mailboxes</a>';
+						echo '</div>';
+					}
 				}
 			} else {
 				?>
@@ -213,7 +219,7 @@ if (isset($_SESSION['token'])) {
 						));
 					}
 
-					if (count($users['results']) != '0') {
+					if (count($users['results']) != 0) {
 						$repousersarray = array();
 						
 						for ($i = 0; $i < count($repo); $i++) {
@@ -238,45 +244,45 @@ if (isset($_SESSION['token'])) {
 						$usersorted = array_values(array_column($repousersarray , null, 'name'));
 					}
 					
-					if (count($usersorted) != '0') {
+					if (count($usersorted) != 0) {
 					?>
-					<div class="alert alert-info">The following is an overview with all the backed up accounts and their Exchange objects within the organization.</div>
-					<table class="table table-bordered table-padding table-striped">
-						<thead>
-							<tr>
-								<th>Account</th>
-								<th>Last backup</th>
-								<th>Objects in backup</th>
-							</tr>
-						</thead>
-						<tbody>
+						<div class="alert alert-info">The following is a limited overview with the backed up accounts and their Exchange objects within the organization. To view the full list, start a restore session.</div>
+						<table class="table table-bordered table-padding table-striped" id="table-exchange-mailboxes">
+							<thead>
+								<tr>
+									<th>Account</th>
+									<th>Last backup</th>
+									<th>Objects in backup</th>
+								</tr>
+							</thead>
+							<tbody>
+							<?php
+							for ($i = 0; $i < count($usersorted); $i++) {
+								$licinfo = array_search($usersorted[$i]['id'], array_column($usersarray, 'id'));
+								
+								echo '<tr>';
+								echo '<td>' . $usersorted[$i]['name'] . ' (' . $usersorted[$i]['email'] . ')</td>';
+								echo '<td>' . date('d/m/Y H:i T', strtotime($usersarray[$licinfo]['lastBackupDate'])) . '</td>';
+								echo '<td>';
+								
+								if ($usersorted[$i]['isMailboxBackedUp']) {
+									echo '<i class="far fa-envelope fa-2x" style="color:green" title="Mailbox"></i> ';
+								} else {
+									echo '<i class="far fa-envelope fa-2x" style="color:red" title="Mailbox"></i> ';
+								}
+								if ($usersorted[$i]['isArchiveBackedUp']) {
+									echo '<i class="fa fa-archive fa-2x" style="color:green" title="Archive"></i> ';
+								} else {
+									echo '<i class="fa fa-archive fa-2x" style="color:red" title="Archive"></i> ';
+								}
+								
+								echo '</td>';
+								echo '</tr>';
+							}
+							?>
+							</tbody>
+						</table>
 						<?php
-						for ($i = 0; $i < count($usersorted); $i++) {
-							$licinfo = array_search($usersorted[$i]['id'], array_column($usersarray, 'id'));
-							
-							echo '<tr>';
-							echo '<td>' . $usersorted[$i]['name'] . ' (' . $usersorted[$i]['email'] . ')</td>';
-							echo '<td>' . date('d/m/Y H:i T', strtotime($usersarray[$licinfo]['lastBackupDate'])) . '</td>';
-							echo '<td>';
-							
-							if ($usersorted[$i]['isMailboxBackedUp']) {
-								echo '<i class="far fa-envelope fa-2x" style="color:green" title="Mailbox"></i> ';
-							} else {
-								echo '<i class="far fa-envelope fa-2x" style="color:red" title="Mailbox"></i> ';
-							}
-							if ($usersorted[$i]['isArchiveBackedUp']) {
-								echo '<i class="fa fa-archive fa-2x" style="color:green" title="Archive"></i> ';
-							} else {
-								echo '<i class="fa fa-archive fa-2x" style="color:red" title="Archive"></i> ';
-							}
-							
-							echo '</td>';
-							echo '</tr>';
-						}
-						?>
-						</tbody>
-					</table>
-					<?php
 					} else {
 						if ($check === false && strtolower($administrator) == 'yes') {
 							echo '<p>No users found for this organization.</p>';
@@ -334,7 +340,7 @@ if (isset($_SESSION['token'])) {
 										<td>
 											<input type="text" class="form-control search" id="jstree_q" placeholder="Hilight a folder...">
 											<div id="jstree">
-												<ul>
+												<ul id="ul-exchange-folders">													
 													<?php													
 													for ($i = 0; $i < count($parentfolders); $i++) {
 														switch (strtolower($parentfolders[$i]['type'])) {
@@ -365,8 +371,9 @@ if (isset($_SESSION['token'])) {
 											<script>
 											$(function() {
 												$('#jstree').jstree({ 
-													core: {
-													  check_callback: true
+													'core': {
+													  'check_callback': true,
+													  'dblclick_toggle': false
 													},
 													'plugins': [ 'search', 'sort' ]
 												});
@@ -393,10 +400,17 @@ if (isset($_SESSION['token'])) {
 													var mailboxid = data.node.data.mailboxid;
 													var parent = data.node.id;
 													
-													loadMailbox(folderid, mailboxid, parent);
+													loadMailboxItems(folderid, mailboxid, parent);
 												});
 											});
 											</script>
+											<?php
+											if (count($folders['results']) >= 50) {
+												echo '<div class="text-center">';
+												echo '<a class="btn btn-default load-more-link load-more-folders" data-mailboxid="' .  $uid . '" data-offset="' . count($folders['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more folders</a>';
+												echo '</div>';
+											}
+											?>
 										</td>
 									</tr>
 								</tbody>
@@ -422,12 +436,12 @@ if (isset($_SESSION['token'])) {
 								</tbody>
 							</table>
 							<div class="text-center">
-								<a class="btn btn-default hide load-more-link" data-folderid="null" data-mailboxid="<?php echo $uid; ?>" data-offset="<?php echo count($items['results'])+1; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more messages</a>
+								<a class="btn btn-default hide load-more-link load-more-items" data-folderid="null" data-mailboxid="<?php echo $uid; ?>" data-offset="0" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more messages</a>
 							</div>
 						</div>
 					</div>
 					<?php
-				} else { /* List all mailboxes */
+				} else { /* List mailboxes */
 					?>				
 					<table class="table table-bordered table-padding table-striped">
 						<thead>
@@ -474,6 +488,11 @@ if (isset($_SESSION['token'])) {
 						</tbody>
 					</table>
 					<?php
+					if (count($users['results']) >= 50) {
+						echo '<div class="text-center">';
+						echo '<a class="btn btn-default load-more-link load-more-mailboxes" data-org="' . $oid . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more mailboxes</a>';
+						echo '</div>';
+					}
 				}
 			}
 			?>
@@ -509,7 +528,6 @@ $('#logout').click(function(e) {
 	})
 });
 
-/* Exchange Restore Buttons */
 $('.btn-start-restore').click(function(e) {
     if (typeof $(this).data('jid') !== 'undefined') {
         var jid = $(this).data('jid');
@@ -601,7 +619,6 @@ $('.btn-stop-restore').click(function(e) {
 <?php
 if (isset($rid)) {
 ?>
-/* Dropdown settings for restore buttons */
 $('hide.bs.dropdown').dropdown(function(e) {
     $(e.target).find('>.dropdown-menu:first').slideUp();
 });
@@ -609,13 +626,11 @@ $('show.bs.dropdown').dropdown(function(e) {
     $(e.target).find('>.dropdown-menu:first').slideDown();
 });
 
-/* Select all checkbox */
 $('#chk-all').click(function(e) {
     var table = $(e.target).closest('table');
     $('tr:visible :checkbox', table).prop('checked', this.checked);
 });
 
-/* Item search */
 $('#search-mailbox').keyup(function(e) {
     var searchText = $(this).val().toLowerCase();
     
@@ -633,16 +648,27 @@ $('ul#ul-exchange-users li').click(function(e) {
     $(this).addClass('active');
 });
 
-/* Load more link for e-mail content */
-$('.load-more-link').click(function(e) {
-    var folderid = $(this).data('folderid');
+$('.load-more-folders').click(function(e) {
     var mailboxid = $(this).data('mailboxid');
     var offset = $(this).data('offset');
     
-    loadMessages(mailboxid, folderid, offset);
+	loadMailboxFolders(mailboxid, offset);
+});
+$('.load-more-items').click(function(e) {
+    var folderid = $(this).data('folderid');
+    var mailboxid = $(this).data('mailboxid');
+    var offset = $(this).data('offset');
+	var type = $(this).data('type');
+    
+	loadMessages(mailboxid, folderid, offset);
+});
+$('.load-more-mailboxes').click(function(e) {
+    var offset = $(this).data('offset');
+    var org = $(this).data('org');
+	
+	loadMailboxes(org, offset);
 });
 
-/* Export to MSG file */
 function downloadMsg(itemid, mailboxid, mailsubject) {
     var rid = '<?php echo $rid; ?>';
     var json = '{ "savetoMsg": null }';
@@ -667,7 +693,6 @@ function downloadMsg(itemid, mailboxid, mailsubject) {
 	});
 }
 
-/* Export to PST file */
 function downloadPST(itemid, mailboxid, mailsubject, type) {
     var rid = '<?php echo $rid; ?>';
 	
@@ -677,12 +702,12 @@ function downloadPST(itemid, mailboxid, mailsubject, type) {
 		text: 'Export in progress and your download will start soon.'
 	})
 	
-	if (type == 'multiple') { /* Multiple items export */
+	if (type == 'multiple') {
 		var act = 'exportmultiplemailitems';
 		var ids = '';
 		var mailsubject = 'exported-mailitems-' + mailsubject;
 		
-		if ($("input[name='checkbox-mail']:checked").length === 0) { /* Error handling for multiple export button */
+		if ($("input[name='checkbox-mail']:checked").length === 0) {
 			Swal.close();
 			
 			Swal.fire({
@@ -707,11 +732,11 @@ function downloadPST(itemid, mailboxid, mailsubject, type) {
 			} \
 		}';
 	} else {
-		if (type == 'single') {	/* Single item export */
+		if (type == 'single') {
 			var act = 'exportmailitem';
-		} else { /* Full mailbox export */
+		} else {
 			var act = 'exportmailbox';
-			var mailsubject = 'mailbox-' + mailsubject; /* mailbox-username */
+			var mailsubject = 'mailbox-' + mailsubject;
 		}
 		
 		var json = '{ \
@@ -738,11 +763,10 @@ function downloadPST(itemid, mailboxid, mailsubject, type) {
 	});
 }
 
-/* Restore to a different location */
 function restoreToDifferent(itemid, mailboxid, type) {
     var rid = '<?php echo $rid; ?>';
 	
-	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) { /* Error handling for multiple restore button */
+	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) {
 		Swal.fire({
 			type: 'error',
 			title: 'Restore failed',
@@ -832,7 +856,7 @@ function restoreToDifferent(itemid, mailboxid, type) {
 				folder = 'Restored-via-web-client';
 			}
 			
-			if (type == 'multiple') { /* Multiple items restore */
+			if (type == 'multiple') {
 				var act = 'restoremultiplemailitems';
 				var ids = '';
 
@@ -859,9 +883,9 @@ function restoreToDifferent(itemid, mailboxid, type) {
 					} \
 				}';
 			} else {
-				if (type == 'single') { /* Single item restore */
+				if (type == 'single') {
 					var act = 'restoremailitem';
-				} else { /* Full mailbox restore */
+				} else {
 					var act = 'restoremailbox';
 				}
 				
@@ -896,11 +920,10 @@ function restoreToDifferent(itemid, mailboxid, type) {
 	});
 } 
 
-/* Restore to original location */
 function restoreToOriginal(itemid, mailboxid, type) {
     var rid = '<?php echo $rid; ?>';
-console.log(type);
-	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) { /* Error handling for multiple restore button */
+
+	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) {
 		Swal.fire({
 			type: 'error',
 			title: 'Restore failed',
@@ -968,7 +991,7 @@ console.log(type);
 				text: 'Restore in progress...'
 			})
 
-			if (type == 'multiple') { /* Multiple items restore */
+			if (type == 'multiple') {
 				var act = 'restoremultiplemailitems';
 				var ids = '';
 				
@@ -985,9 +1008,9 @@ console.log(type);
 					} \
 				}';
 			} else {
-				if (type == 'single') { /* Single item restore */
+				if (type == 'single') {
 					var act = 'restoremailitem';
-				} else if (type == 'full') { /* Full mailbox restore */
+				} else if (type == 'full') {
 					var act = 'restoremailbox';
 				}
 				
@@ -1028,7 +1051,6 @@ function enableTree() {
   $('#jstree i.jstree-ocl').off('click.block');
 }
 
-/* Exchange functions */
 function fillTable(response, mailboxid) {
     if (response.results.length !== 0) {
 		for (var i = 0; i < response.results.length; i++) {
@@ -1084,12 +1106,96 @@ function fillTable(response, mailboxid) {
 	}
 }
 
-function loadMailbox(folderid, mailboxid, parent) {
+function loadMailboxes(org, offset) {
+	var rid = '<?php echo $rid; ?>';
+	
+    $.post('veeam.php', {'action' : 'getmailboxes', 'offset' : offset, 'rid' : rid}).done(function(data) {
+        var response = JSON.parse(data);
+
+        if (response.results.length != 0) {
+			for (var i = 0; i < response.results.length; i++) {
+				if ($('#table-exchange-mailboxes').length > 0){
+					$('#table-exchange-mailboxes tbody').append('<tr> \
+						<td><a href="exchange/' + org + '/' + response.results[i].id + '">' + response.results[i].name + '</a></td> \
+						<td>' + response.results[i].email + '</td> \
+						<td class="text-center"> \
+						<div class="btn-group dropdown"> \
+						<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
+						<ul class="dropdown-menu dropdown-menu-right"> \
+						<li class="dropdown-header">Download as</li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST(\'' + response.results[i].name + '\', \'' + response.results[i].id + '\', \'' + response.results[i].name + '\', \'full\')"><i class="fa fa-download"></i> PST file</a></li> \
+						<li class="divider"></li> \
+						<li class="dropdown-header">Restore to</li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + response.results[i].name + '\', \'' + response.results[i].id + '\', \'full\')"><i class="fa fa-upload"></i> Original location</a></li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent(\'' + response.results[i].name + '\', \'' + response.results[i].id + '\', \'full\')"><i class="fa fa-upload"></i> Different location</a></li> \
+						</ul> \
+						</div> \
+						</td> \
+						</tr>');
+				}
+				
+				$('#ul-exchange-users').append('<li><a href="exchange/' + org + '/' + response.results[i].id + '">' + response.results[i].name + '</a></li>');
+			}
+			
+			if (response.results.length >= 50) {
+				$('a.load-more-mailboxes').data('offset', offset + 50);
+			} else {
+				$('a.load-more-mailboxes').addClass('hide');
+			}
+		}
+    });
+}
+
+function loadMailboxFolders(mailboxid, offset) {
+	var rid = '<?php echo $rid; ?>';
+	
+    $.post('veeam.php', {'action' : 'getmailboxfolders', 'mailboxid' : mailboxid, 'offset' : offset, 'rid' : rid}).done(function(data) {
+        var response = JSON.parse(data);
+
+        if (response.results.length != 0) {		
+			var icon, type;
+			
+			for (var i = 0; i < response.results.length; i++) {
+				type = response.results[i].type;
+				
+				switch (type.toLowerCase()) {
+					case 'appointment':
+						icon = 'far fa-calendar-check';
+						break;
+					case 'contact':
+						icon = 'far fa-address-book';
+						break;
+					case 'journal':
+						icon = 'fa fa-book';
+						break;
+					case 'stickynote':
+						icon = 'far fa-sticky-note';
+						break;
+					case 'task':
+						icon = 'fa fa-tasks';
+						break;
+					default:
+						icon = 'far fa-folder';
+				}
+				
+				$('#jstree').jstree('create_node', '#', {data: {"folderid" : response.results[i].id, "mailboxid" : mailboxid, "jstree" : {"icon" : icon}}, text: response.results[i].name});
+			}
+			
+			if (response.results.length >= 50) {
+				$('a.load-more-folders').data('offset', offset + 50);
+			} else {
+				$('a.load-more-folders').addClass('hide');
+			}
+		}
+    });
+}
+
+function loadMailboxItems(folderid, mailboxid, parent) {
 	var rid = '<?php echo $rid; ?>';
 	
 	disableTree();
 	
-	$.post('veeam.php', {'action' : 'getmailfolders', 'folderid' : folderid, 'mailboxid' : mailboxid, 'rid' : rid}).done(function(data) {
+	$.post('veeam.php', {'action' : 'getmailboxfolders', 'folderid' : folderid, 'mailboxid' : mailboxid, 'offset' : 0, 'limit' : 250, 'rid' : rid}).done(function(data) {
 		var responsefolders = JSON.parse(data);
 		
 		if (parent !== null) {
@@ -1139,7 +1245,7 @@ function loadMailbox(folderid, mailboxid, parent) {
 	
 	$('#table-exchange-items tbody').empty();
 	$('#loader').removeClass('hide');
-	$('a.load-more-link').addClass('hide');
+	$('a.load-more-items').addClass('hide');
 	
     $.post('veeam.php', {'action' : 'getmailitems', 'folderid' : folderid, 'mailboxid' : mailboxid, 'rid' : rid}).done(function(data) {
         var responseitems = JSON.parse(data);
@@ -1147,10 +1253,11 @@ function loadMailbox(folderid, mailboxid, parent) {
         if (responseitems.results.length != 0) {
             fillTable(responseitems, mailboxid);
 			
-			if (responseitems.results.length == 30) {
-				$('a.load-more-link').removeClass('hide');
+			if (responseitems.results.length >= 50) {
+				$('a.load-more-items').removeClass('hide');
+				$('a.load-more-items').data('folderid', folderid);
 			} else {
-				$('a.load-more-link').addClass('hide');
+				$('a.load-more-items').addClass('hide');
 			}
 		} else {
 			$('#table-exchange-items tbody').append('<tr><td class="text-center" colspan="6">No items available in this folder.</td></tr>');
@@ -1170,12 +1277,11 @@ function loadMessages(mailboxid, folderid, offset) {
         if (response.results.length != 0) {
             fillTable(response, mailboxid);
 			
-			if (response.results.length == 30) {
-				$('a.load-more-link').removeClass('hide');
-				$('a.load-more-link').data('offset', offset + 30);
-				$('a.load-more-link').data('folderid', folderid);
+			if (response.results.length >= 50) {
+				$('a.load-more-items').removeClass('hide');
+				$('a.load-more-items').data('offset', offset + 50);
 			} else {
-				$('a.load-more-link').addClass('hide');
+				$('a.load-more-items').addClass('hide');
 			}
 		} else {
 			$('#table-exchange-items tbody').append('<tr><td class="text-center" colspan="6">No more items available in this folder.</td></tr>');

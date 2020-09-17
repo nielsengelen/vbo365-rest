@@ -61,7 +61,7 @@ if (isset($_SESSION['token'])) {
 	</ul>
 </nav>
 <div class="container-fluid">
-    <link rel="stylesheet" href="css/onedrive.css" />
+    <link rel="stylesheet" type="text/css" href="css/onedrive.css" />
     <aside id="sidebar">
         <div class="logo-container"><i class="logo fa fa-cloud"></i></div>
         <div class="separator"></div>
@@ -102,7 +102,7 @@ if (isset($_SESSION['token'])) {
 				$org = $veeam->getOrganizationID($rid);
 				$users = $veeam->getOneDrives($rid);
 
-				if ($users == '500') { /* Restore session has expired or was killed */
+				if ($users == '500') {
 					unset($_SESSION['rid']);
 					?>
 					<script>
@@ -137,6 +137,12 @@ if (isset($_SESSION['token'])) {
 					}
 
 					echo '</ul>';
+					
+					if (count($users['results']) >= 50) {
+						echo '<div class="text-center">';
+						echo '<a class="btn btn-default load-more-link load-more-accounts" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more accounts</a>';
+						echo '</div>';
+					}
 				}
 			} else {
 			   ?>
@@ -193,7 +199,6 @@ if (isset($_SESSION['token'])) {
 				</div>
 				<div class="col-sm-10">
 					<button class="btn btn-default btn-secondary btn-start-restore" title="Start Restore" <?php if (isset($_GET['oid'])) { echo 'data-oid="' . $_GET['oid'] . '"'; } ?> data-latest="false">Start Restore</button>
-				
 					<button class="btn btn-default btn-secondary btn-start-restore" title="Explore last backup (<?php echo date('d/m/Y H:i T', strtotime($org['lastBackuptime'])); ?>)" <?php if (isset($_GET['oid'])) { echo 'data-oid="' . $_GET['oid'] . '"'; } ?> data-pit="<?php echo date('Y.m.d H:i', strtotime($org['lastBackuptime'])); ?>" data-latest="true">Explore last backup</button>
 				</div>
 			</div>
@@ -215,7 +220,7 @@ if (isset($_SESSION['token'])) {
 						));
 					}
 					
-					if (count($users['results']) != '0') {
+					if (count($users['results']) != 0) {
 						$repousersarray = array();
 						
 						for ($i = 0; $i < count($repo); $i++) {
@@ -239,9 +244,9 @@ if (isset($_SESSION['token'])) {
 						$usersorted = array_values(array_column($repousersarray , null, 'name'));
 					}
 					
-					if (count($usersorted) != '0') {
+					if (count($usersorted) != 0) {
 					?>
-					<div class="alert alert-info">The following is an overview with all the backed up OneDrive accounts within the organization.</div>
+					<div class="alert alert-info">The following is a limited overview with the backed up OneDrive accounts within the organization. To view the full list, start a restore session.</div>
 					<table class="table table-bordered table-padding table-striped">
 						<thead>
 							<tr>
@@ -293,7 +298,7 @@ if (isset($_SESSION['token'])) {
 					$folders = $veeam->getOneDriveTree($rid, $uid);
 					$documents = $veeam->getOneDriveTree($rid, $uid, 'documents');
 					 
-					if ((count($folders['results']) != '0') || (count($documents['results']) != '0')) {
+					if ((count($folders['results']) != 0) || (count($documents['results']) != 0)) {
 					?>
 					<div class="row">
 						<div class="col-sm-2 text-center">
@@ -326,19 +331,19 @@ if (isset($_SESSION['token'])) {
 											<input type="text" class="form-control search" id="jstree_q" placeholder="Search a folder...">
 											<div id="jstree">
 												<ul>													
-													<?php
-													for ($i = 0; $i < count($folders['results']); $i++) {
-														echo '<li data-folderid="'.$folders['results'][$i]['id'].'"  data-jstree=\'{ "opened" : true }\'>'.$folders['results'][$i]['name'].'</li>';
-													}
-													?>													
+												<?php
+												for ($i = 0; $i < count($folders['results']); $i++) {
+													echo '<li data-folderid="'.$folders['results'][$i]['id'].'" data-jstree=\'{ "opened" : true }\'>'.$folders['results'][$i]['name'].'</li>';
+												}
+												?>													
 												</ul>
 											</div>
 											<script>
 											$(function () {
 												$('#jstree').jstree({ 
-													core: {
-													  check_callback: true,
-													  dblclick_toggle: false
+													'core': {
+													  'check_callback': true,
+													  'dblclick_toggle': false
 													},
 													'plugins': [ 'search', 'sort' ]
 												});
@@ -368,6 +373,13 @@ if (isset($_SESSION['token'])) {
 												});
 											});
 											</script>
+											<?php
+											if (count($folders['results']) >= 50) {
+												echo '<div class="text-center">';
+												echo '<a class="btn btn-default load-more-link load-more-folders" data-folderid="null" data-userid="' . $uid . '" data-offset="' . count($folders['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more folders</a>';
+												echo '</div>';
+											}
+											?>
 										</td>
 									</tr>
 								</tbody>
@@ -388,7 +400,7 @@ if (isset($_SESSION['token'])) {
 								</thead>
 								<tbody>
 								<?php
-								for ($i = 0; $i < count($folders['results']); $i++) { /* Show folders first if available */
+								for ($i = 0; $i < count($folders['results']); $i++) {
 								?>
 									<tr>
 										<td></td>
@@ -412,7 +424,7 @@ if (isset($_SESSION['token'])) {
 								<?php
 								}
 
-								for ($i = 0; $i < count($documents['results']); $i++) { /* Show documents next if available */
+								for ($i = 0; $i < count($documents['results']); $i++) {
 								?>
 									<tr>
 										<td class="text-center"><input type="checkbox" name="checkbox-onedrive" value="<?php echo $documents['results'][$i]['id']; ?>"></td>
@@ -441,14 +453,12 @@ if (isset($_SESSION['token'])) {
 							</table>
 							<div class="text-center">
 								<?php
-								if (count($documents['results']) == '30') {
-								?>
-									<a class="btn btn-default load-more-link" data-folderid="null" data-userid="<?php echo $uid; ?>" data-offset="<?php echo count($documents['results'])+1; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more items</a>
-								<?php
+								if (count($documents['results']) >= 50) {
+									echo '<a class="btn btn-default load-more-link load-more-items" data-folderid="null" data-userid="' . $uid . '" data-offset="' . count($documents['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more items</a>';
+								} else if (count($folders['results']) >= 50) {
+									echo '<a class="btn btn-default load-more-link load-more-items" data-folderid="null" data-userid="' . $uid . '" data-offset="' . count($folders['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more items</a>';
 								} else {
-								?>
-									<a class="btn btn-default hide load-more-link" data-folderid="null" data-userid="<?php echo $uid; ?>" data-offset="<?php echo count($documents['results'])+1; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more items</a>
-								<?php
+									echo '<a class="btn btn-default hide load-more-link load-more-items" data-folderid="null" data-userid="' . $uid . '" data-offset="0" href="' . $_SERVER['REQUEST_URI'] . '#">Load more items</a>';
 								}
 								?>
 							</div>
@@ -458,9 +468,9 @@ if (isset($_SESSION['token'])) {
 					} else {
 						echo '<p>No items available for this account.</p>';
 					}
-				} else { /* List all accounts */
+				} else { /* List accounts */
 					?>				
-					<table class="table table-bordered table-padding table-striped">
+					<table class="table table-bordered table-padding table-striped" id="table-onedrive-accounts">
 						<thead>
 							<tr>
 								<th>Name</th>
@@ -502,6 +512,11 @@ if (isset($_SESSION['token'])) {
 						</tbody>
 					</table>
 					<?php
+					if (count($users['results']) >= 50) {
+						echo '<div class="text-center">';
+						echo '<a class="btn btn-default load-more-link load-more-accounts" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more accounts</a>';
+						echo '</div>';
+					}
 				}
 			}
 			?>
@@ -537,7 +552,6 @@ $('#logout').click(function(e) {
 	})
 });
 
-/* Onedrive Restore Buttons */
 $('.btn-start-restore').click(function(e) {
     if (typeof $(this).data('jid') !== 'undefined') {
         var jid = $(this).data('jid');
@@ -629,7 +643,6 @@ $('.btn-stop-restore').click(function(e) {
 <?php
 if (isset($rid)) {
 ?>
-/* Dropdown settings */
 $('hide.bs.dropdown').dropdown(function(e) {
     $(e.target).find('>.dropdown-menu:first').slideUp();
 });
@@ -637,13 +650,11 @@ $('show.bs.dropdown').dropdown(function(e) {
     $(e.target).find('>.dropdown-menu:first').slideDown();
 });
 
-/* Select all checkbox */
 $('#chk-all').click(function(e) {
     var table = $(e.target).closest('table');
     $('tr:visible :checkbox', table).prop('checked', this.checked);
 });
 
-/* Item search */
 $('#search-onedrive').keyup(function(e) {
     var searchText = $(this).val().toLowerCase();
     
@@ -661,17 +672,28 @@ $('ul#ul-onedrive-users li').click(function(e) {
     $(this).addClass('active');
 });
 
-/* Load more link */
-$('.load-more-link').click(function(e) {
-    var folderid = $(this).data('folderid');
-    var userid = $(this).data('userid');
+$('.load-more-accounts').click(function(e) {
     var offset = $(this).data('offset');
-    var rid = '<?php echo $rid; ?>';
+    var org = $(this).data('org');
+	
+	loadAccounts(offset, org);
+});
+$('.load-more-folders').click(function(e) {
+	var folderid = $(this).data('folderid');
+    var offset = $(this).data('offset');
+	var userid = $(this).data('userid');
+	var node = $('#jstree').jstree('get_selected');
 
-    loadItems(folderid, userid, offset);
+	loadFolders(folderid, offset, node, userid);
+});
+$('.load-more-items').click(function(e) {
+    var folderid = $(this).data('folderid');
+    var offset = $(this).data('offset');
+	var userid = $(this).data('userid');
+    
+    loadItems(folderid, offset, userid);
 });
 
-/* Export to file */
 function downloadFile(filetype, itemid, itemname, userid) {
     var rid = '<?php echo $rid; ?>';
 	var json = '{ "save": { "asZip": "false" } }';
@@ -698,7 +720,6 @@ function downloadFile(filetype, itemid, itemname, userid) {
 	});
 }
 
-/* Export to ZIP file */
 function downloadZIP(filetype, itemid, itemname, userid, type) {
     var filename = itemname;
     var rid = '<?php echo $rid; ?>';
@@ -709,13 +730,13 @@ function downloadZIP(filetype, itemid, itemname, userid, type) {
 		text: 'Export in progress and your download will start soon.'
 	})
 	
-	if (type == 'multiple') { /* Multiple items export */
+	if (type == 'multiple') {
 		var act = 'exportmultipleonedriveitems';
 		var filetype = 'documents';
 		var ids = '';
 		var filename = 'exported-onedriveitems-' + itemname;
 		
-		if ($("input[name='checkbox-onedrive']:checked").length === 0) { /* Error handling for multiple export button */
+		if ($("input[name='checkbox-onedrive']:checked").length === 0) {
 			Swal.close();
 			
 			Swal.fire({
@@ -740,11 +761,11 @@ function downloadZIP(filetype, itemid, itemname, userid, type) {
 			} \
 		}';
 	} else {
-		if (type == 'single') {	/* Single item export */
+		if (type == 'single') {
 			var act = 'exportonedriveitem';
-		} else { /* Full OneDrive export */
+		} else {
 			var act = 'exportonedrive';
-			var filename = 'onedrive-' + itemname; /* onedrive-username */
+			var filename = 'onedrive-' + itemname;
 		}
 		
 		var json = '{ "save": { "asZip": "true" } }';
@@ -767,11 +788,10 @@ function downloadZIP(filetype, itemid, itemname, userid, type) {
 	});
 }
 
-/* Restore to original location */
 function restoreToOriginal(filetype, itemid, userid, type) {
     var rid = '<?php echo $rid; ?>';
 	
-	if (type == 'multiple' && $("input[name='checkbox-onedrive']:checked").length == 0) { /* Error handling for multiple restore button */
+	if (type == 'multiple' && $("input[name='checkbox-onedrive']:checked").length == 0) {
 		Swal.fire({
 			type: 'error',
 			title: 'Restore failed',
@@ -849,7 +869,7 @@ function restoreToOriginal(filetype, itemid, userid, type) {
 				text: 'Restore in progress...'
 			})
 			
-			if (type == 'multiple') { /* Multiple items restore */
+			if (type == 'multiple') {
 				var act = 'restoremultipleonedriveitems';
 				var ids = '';
 				
@@ -868,9 +888,9 @@ function restoreToOriginal(filetype, itemid, userid, type) {
 					} \
 				}';
 			} else {
-				if (type == 'single') { /* Single item restore */
+				if (type == 'single') {
 					var act = 'restoreonedriveitem';
-				} else if (type == 'full') { /* Full OneDrive restore */
+				} else if (type == 'full') {
 					var act = 'restoreonedrive';
 				}
 				
@@ -913,7 +933,6 @@ function enableTree() {
   $('#jstree i.jstree-ocl').off('click.block');
 }
 
-/* OneDrive functions */
 function fillTableDocuments(response, userid) {
     if (response.results.length !== 0) {
         for (var i = 0; i < response.results.length; i++) {
@@ -969,6 +988,71 @@ function fillTableFolders(response, folderid, userid) {
     }
 }
 
+function loadAccounts(offset, org) {
+	var rid = '<?php echo $rid; ?>';
+	
+    $.post('veeam.php', {'action' : 'getonedriveaccounts', 'offset' : offset, 'rid' : rid}).done(function(data) {
+        var response = JSON.parse(data);
+
+        if (response.results.length != 0) {
+			for (var i = 0; i < response.results.length; i++) {
+				if ($('#table-onedrive-accounts').length > 0){
+					$('#table-onedrive-accounts tbody').append('<tr> \
+						<td><a href="onedrive/' + org + '/' + response.results[i].id + '">' + response.results[i].name + '</a></td> \
+						<td class="text-center"> \
+						<div class="btn-group dropdown"> \
+						<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
+						<ul class="dropdown-menu dropdown-menu-right"> \
+						<li class="dropdown-header">Download as</li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadZIP(\'documents\', \'' + response.results[i].name + '\', \'' + response.results[i].name + '\', \'' + response.results[i].id + '\', \'full\')"><i class="fa fa-download"></i> ZIP file</a></li> \
+						<li class="divider"></li> \
+						<li class="dropdown-header">Restore to</li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'documents\', \'' + response.results[i].name + '\', \'' + response.results[i].id + '\', \'full\')"><i class="fa fa-upload"></i> Original location</a></li> \
+						</ul> \
+						</div> \
+						</td> \
+						</tr>');
+				}
+				
+				$('#ul-onedrive-users').append('<li><a href="onedrive/' + org + '/' + response.results[i].id + '">' + response.results[i].name + '</a></li>');
+			}
+			
+			if (response.results.length >= 50) {
+				$('a.load-more-accounts').data('offset', offset + 50);
+			} else {
+				$('a.load-more-accounts').addClass('hide');
+			}
+		}
+    });
+}
+
+function loadFolders(folderid, offset, node, userid) {
+	var rid = '<?php echo $rid; ?>';
+
+    $.post('veeam.php', {'action' : 'getonedrivefolders', 'folderid' : folderid, 'userid' : userid, 'offset' : offset, 'rid' : rid}).done(function(data) {
+        var response = JSON.parse(data);
+
+        if (response.results.length != 0) {
+			if (node.length === 0) {
+				node = '#';
+			}
+			
+			for (var i = 0; i < response.results.length; i++) {
+				$('#jstree').jstree('create_node', node, {data: {"folderid" : response.results[i].id, "jstree" : {"opened" : true}}, text: response.results[i].name});
+			}
+			
+			fillTableFolders(response, folderid, userid);
+			
+			if (response.results.length >= 150) {
+				$('a.load-more-folders').removeClass('hide');
+				$('a.load-more-folders').data('offset', offset + 50);
+			} else {
+				$('a.load-more-folders').addClass('hide');
+			}
+		}
+    });
+}
+
 function loadFolderItems(folderid, parent) {
 	if (arguments.length == 1) {
 		parent = null;
@@ -982,7 +1066,7 @@ function loadFolderItems(folderid, parent) {
 	
 	$('#table-onedrive-items tbody').empty();
 	$('#loader').removeClass('hide');
-	$('a.load-more-link').addClass('hide');
+	$('a.load-more-items').addClass('hide');
 	
     $.post('veeam.php', {'action' : 'getonedriveitemsbyfolder', 'folderid' : folderid, 'rid' : rid, 'userid' : userid, 'type' : 'folders'}).done(function(data) {
         responsefolders = JSON.parse(data);
@@ -1068,7 +1152,7 @@ function loadFolderItems(folderid, parent) {
 							
 							if (!childrenFolderidArray.push(responsefolderid)) {
 								$('#jstree').jstree('create_node', treeid, {data: {"folderid" : responsefolderid}, text: responsefoldername});
-								console.log('createB');
+								
 								$('#jstree').on('create_node.jstree', function (e, data) {
 									$('#jstree').jstree('open_node', data.parent);
 								});
@@ -1080,67 +1164,59 @@ function loadFolderItems(folderid, parent) {
 		}
     });
 
-	setTimeout(function(e) {
-		$.post('veeam.php', {'action' : 'getonedriveitemsbyfolder', 'folderid' : folderid, 'rid' : rid, 'userid' : userid, 'type' : 'documents'}).done(function(data) {
-			responsedocuments = JSON.parse(data);
-		});
-	}, 2000);
-
-    setTimeout(function(e) {
+	$.post('veeam.php', {'action' : 'getonedriveitemsbyfolder', 'folderid' : folderid, 'rid' : rid, 'userid' : userid, 'type' : 'documents'}).done(function(data) {
+		responsedocuments = JSON.parse(data);
+	});
+	
+	setTimeout(function(e) {	
 		if ((typeof responsefolders !== 'undefined' && responsefolders.results.length === 0) && (typeof responsedocuments !== 'undefined' && responsedocuments.results.length === 0)) {
 			$('#table-onedrive-items tbody').append('<tr><td class="text-center" colspan="6">No items available in this folder.</td></tr>');
+			return;
 		}
 		
-        if (typeof responsefolders !== 'undefined' && responsefolders.results.length !== 0) {
-            fillTableFolders(responsefolders, folderid, userid);
-        }
+		if (typeof responsefolders !== 'undefined' && responsefolders.results.length !== 0) {
+			fillTableFolders(responsefolders, folderid, userid);
+		}
 
-        if (typeof responsedocuments !== 'undefined' && responsedocuments.results.length !== 0) {
-            fillTableDocuments(responsedocuments, userid);
-        }
+		if (typeof responsedocuments !== 'undefined' && responsedocuments.results.length !== 0) {
+			fillTableDocuments(responsedocuments, userid);
+		}
 
-        if ((typeof responsefolders !== 'undefined' && responsefolders.results.length == '30') || (typeof responsedocuments !== 'undefined' && responsedocuments.results.length == '30')) {
-            $('a.load-more-link').removeClass('hide');
-            $('a.load-more-link').data('offset', 30);
-            $('a.load-more-link').data('folderid', folderid);
-        } else {
-            $('a.load-more-link').addClass('hide');
-        }
+		if (typeof responsefolders !== 'undefined' && responsefolders.results.length >=50) {
+			$('a.load-more-folders').removeClass('hide');
+			$('a.load-more-folders').data('offset', 50);
+			$('a.load-more-folders').data('folderid', folderid);
+		} else if (typeof responsedocuments !== 'undefined' && responsedocuments.results.length >= 50) {
+			$('a.load-more-items').removeClass('hide');
+			$('a.load-more-items').data('offset', 50);
+			$('a.load-more-items').data('folderid', folderid);
+		} else {
+			$('a.load-more-items').addClass('hide');
+		}
 		
 		$('#loader').addClass('hide');
 		enableTree();
-    }, 3000);
+	}, 2000);
 }
 
-function loadItems(folderid, userid, offset) { /* Load additional items in folder */
-    var responsedocuments, responsefolders;
+function loadItems(folderid, offset, userid) {
 	var rid = '<?php echo $rid; ?>';
 
-    $.post('veeam.php', {'action' : 'getonedriveitems', 'folderid' : folderid, 'rid' : rid, 'userid' : userid, 'offset' : offset, 'type' : 'folders'}).done(function(data) {
-        responsefolders = JSON.parse(data);
-    });
-
     $.post('veeam.php', {'action' : 'getonedriveitems', 'folderid' : folderid, 'rid' : rid, 'userid' : userid, 'offset' : offset, 'type' : 'documents'}).done(function(data) {
-        responsedocuments = JSON.parse(data);
-    });
+        var response = JSON.parse(data);
+		
+		if (typeof response !== undefined) {
+			fillTableDocuments(response, userid);
+		}
 
-    setTimeout(function(e) {
-        if (typeof responsefolders !== undefined) {
-            fillTableFolders(responsefolders, folderid, userid);
-        }
-        
-        if (typeof responsedocuments !== undefined) {
-            fillTableDocuments(responsedocuments, userid);
-        }
-
-        if (responsefolders.results.length == '30' || responsedocuments.results.length == '30') {
-            $('a.load-more-link').removeClass('hide');
-            $('a.load-more-link').data('offset', offset + 30);
-            $('a.load-more-link').data('folderid', folderid);
-        } else {
-            $('a.load-more-link').addClass('hide');
-        }
-    }, 2000);
+		if (typeof response !== 'undefined' && response.results.length >= 50) {
+			$('a.load-more-items').removeClass('hide');
+			$('a.load-more-items').data('offset', offset + 50);
+			$('a.load-more-items').data('folderid', folderid);
+		} else {
+			$('a.load-more-items').addClass('hide');
+		}
+    });  
 }
 <?php
 }

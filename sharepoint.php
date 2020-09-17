@@ -61,7 +61,7 @@ if (isset($_SESSION['token'])) {
 	</ul>
 </nav>
 <div class="container-fluid">
-    <link rel="stylesheet" href="css/sharepoint.css" />
+    <link rel="stylesheet" type="text/css" href="css/sharepoint.css" />
     <aside id="sidebar">
         <div class="logo-container"><i class="logo fa fa-share-alt"></i></div>
         <div class="separator"></div>
@@ -70,7 +70,7 @@ if (isset($_SESSION['token'])) {
 		if (!isset($_SESSION['rid'])) { /* No restore session is running */
 			$check = filter_var($user, FILTER_VALIDATE_EMAIL);
 
-			echo '<ul id="ul-sharepoint-users">';
+			echo '<ul id="ul-sharepoint-organizations">';
 			
 			if ($check === false && strtolower($administrator) == 'yes') {
 				$oid = $_GET['oid'];
@@ -135,10 +135,16 @@ if (isset($_SESSION['token'])) {
 					}
 
 					echo '</ul>';
+					
+					if (count($libraries['results']) >= 50 || count($lists['results']) >= 50) {
+						echo '<div class="text-center">';
+						echo '<a class="btn btn-default load-more-link load-more-content" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" data-siteid="' . $sid . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more</a>';
+						echo '</div>';
+					}
 				} else {
 					$sites = $veeam->getSharePointSites($rid);
-					
-					if ($sites == '500') { /* Restore session has expired or was killed */
+										
+					if ($sites == '500') {
 						unset($_SESSION['rid']);
 						?>
 						<script>
@@ -152,6 +158,10 @@ if (isset($_SESSION['token'])) {
 						</script>
 						<?php
 					} else {
+						echo '<a href="sharepoint/' . $org['id'] . '"><i class="fa fa-home"></i></a>';
+						echo '<ul id="ul-sharepoint-sites">';
+						echo '<div class="separator"></div>';
+					
 						for ($i = 0; $i < count($sites['results']); $i++) {
 							array_push($content, array('name'=> $sites['results'][$i]['name'], 'id' => $sites['results'][$i]['id']));
 						}
@@ -162,6 +172,14 @@ if (isset($_SESSION['token'])) {
 
 						foreach ($content as $key => $value) {
 							echo '<li><a href="sharepoint/' . $org['id'] . '/' . $value['id'] . '">' . $value['name'] . '</a></li>';
+						}
+						
+						echo '</ul>';
+						
+						if (count($sites['results']) >= 50) {
+							echo '<div class="text-center">';
+							echo '<a class="btn btn-default load-more-link load-more-sites" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more sites</a>';
+							echo '</div>';
 						}
 					}
 				}
@@ -242,7 +260,7 @@ if (isset($_SESSION['token'])) {
 						}
 					}
 					
-					if (count($sites['results']) != '0') {
+					if (count($sites['results']) != 0) {
 						for ($i = 0; $i < count($sites['results']); $i++) {
 							if (strcmp($sites['results'][$i]['organizationId'], $orgid) === 0) {
 								if (!empty($sites['results'][$i]['backedUpTime'])) {
@@ -263,7 +281,7 @@ if (isset($_SESSION['token'])) {
 						
 					if (isset($orgid) && count($sitesarray) != 0) {
 					?>
-					<div class="alert alert-info">The following is an overview with all the backed up (personal) SharePoint sites within the organization.</div>					
+					<div class="alert alert-info">The following is a limited overview with all the backed up (personal) SharePoint sites within the organization. To view the full list, start a restore session.</div>
 					<table class="table table-bordered table-padding table-striped">
 						<thead>
 							<tr>
@@ -312,13 +330,13 @@ if (isset($_SESSION['token'])) {
 					$name = $veeam->getSharePointSiteName($rid, $sid);
 
 					if (isset($cid) && !empty($cid)) {
-						$folders = $veeam->getSharePointTree($rid, $sid, $cid);
+						$folders = $veeam->getSharePointItems($rid, $sid, $cid);
 
-						if (strcmp($type, 'list') === 0) { /* Lists have folders and items */
-							$items = $veeam->getSharePointTree($rid, $sid, $cid, 'Items');
+						if (strcmp($type, 'list') === 0) {
+							$items = $veeam->getSharePointItems($rid, $sid, $cid, 'Items');
 							$list = $veeam->getSharePointListName($rid, $sid, $cid, 'Lists');
-						} else { /* Libraries have folders and documents */
-							$documents = $veeam->getSharePointTree($rid, $sid, $cid, 'Documents');
+						} else {
+							$documents = $veeam->getSharePointItems($rid, $sid, $cid, 'Documents');
 							$list = $veeam->getSharePointListName($rid, $sid, $cid, 'Libraries');
 						}
 						?>
@@ -333,8 +351,7 @@ if (isset($_SESSION['token'])) {
 							}
 							?>
 						</ul>
-						<?php
-						
+						<?php			
 						if (count($folders['results']) === 0 && count($documents['results']) === 0) {
 							echo '<p>No items available.</p>';
 						} else {
@@ -385,8 +402,9 @@ if (isset($_SESSION['token'])) {
 												<script>
 												$(function () {
 													$('#jstree').jstree({ 
-														core: {
-														  check_callback: true
+														'core': {
+														  'check_callback': true,
+														  'dblclick_toggle': false
 														},
 														'plugins': [ 'search', 'sort' ]
 													});
@@ -416,6 +434,13 @@ if (isset($_SESSION['token'])) {
 													});
 												});
 												</script>
+												<?php
+												if (count($folders['results']) >= 50) {
+													echo '<div class="text-center">';
+													echo '<a class="btn btn-default load-more-link load-more-folders" data-folderid="' . $cid . '" data-siteid="' . $sid . '" data-offset="' . count($folders['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more folders</a>';
+													echo '</div>';
+												}
+												?>
 											</td>
 										</tr>
 									</tbody>
@@ -514,24 +539,26 @@ if (isset($_SESSION['token'])) {
 									?>
 									</tbody>
 								</table>
-								<div class="text-center">
-									<?php
-									if (count($documents['results']) == '30') {
-									?>
-										<a class="btn btn-default load-more-link" data-folderid="null" data-siteid="<?php echo $sid; ?>" data-offset="<?php echo count($documents['results'])+1; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more items</a>
-									<?php
-									} else {
-									?>
-										<a class="btn btn-default hide load-more-link" data-folderid="null" data-siteid="<?php echo $sid; ?>" data-offset="<?php echo count($documents['results'])+1; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more items</a>
-									<?php
-									}
-									?>
-								</div>
+								<?php
+								if (count($documents['results']) >= 50) {
+									echo '<div class="text-center">';
+									echo '<a class="btn btn-default load-more-link load-more-items" data-folderid="' . $cid . '" data-siteid="' . $sid . '" data-offset="' . count($documents['results']) . '" data-type="documents" href="' . $_SERVER['REQUEST_URI'] . '#">Load more items</a>';
+									echo '</div>';
+								} else if (count($items['results']) >= 50) {
+									echo '<div class="text-center">';
+									echo '<a class="btn btn-default load-more-link load-more-items" data-folderid="' . $cid . '" data-siteid="' . $sid . '" data-offset="' . count($items['results']) . '" data-type="items" href="' . $_SERVER['REQUEST_URI'] . '#">Load more items</a>';
+									echo '</div>';
+								} else {
+									echo '<div class="text-center">';
+									echo '<a class="btn btn-default hide load-more-link load-more-items" data-folderid="' . $cid . '" data-siteid="' . $sid . '" data-offset="' . count($documents['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more items</a>';
+									echo '</div>';
+								}
+								?>
 							</div>
 						</div>
 						<?php
 						}
-					} else { /* Select a library or list */
+					} else {
 						?>
 						<ul class="breadcrumb">
 							<li><a href="sharepoint/<?php echo $org['id']; ?>"><i class="fa fa-home"></i></a></li>
@@ -542,7 +569,7 @@ if (isset($_SESSION['token'])) {
 					}
 				} else { /* List all sites */
 				?>
-				<table class="table table-bordered table-padding table-striped">
+				<table class="table table-bordered table-padding table-striped" id="table-sharepoint-sites">
 					<thead>
 						<tr>
 							<th>Site</th>
@@ -581,6 +608,11 @@ if (isset($_SESSION['token'])) {
 					</tbody>
 				</table>
 				<?php
+				if (count($sites['results']) >= 50) {
+					echo '<div class="text-center">';
+					echo '<a class="btn btn-default load-more-link load-more-sites" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more sites</a>';
+					echo '</div>';
+				}
 				}
 			}
 			?>
@@ -616,7 +648,6 @@ $('#logout').click(function(e) {
 	})
 });
 
-/* SharePoint Restore Buttons */
 $('.btn-start-restore').click(function(e) {
     if (typeof $(this).data('jid') !== 'undefined') {
         var jid = $(this).data('jid');
@@ -708,7 +739,6 @@ $('.btn-stop-restore').click(function(e) {
 <?php
 if (isset($rid)) {
 ?>
-/* Dropdown settings */
 $('hide.bs.dropdown').dropdown(function(e) {
     $(e.target).find('>.dropdown-menu:first').slideUp();
 });
@@ -716,13 +746,11 @@ $('show.bs.dropdown').dropdown(function(e) {
     $(e.target).find('>.dropdown-menu:first').slideDown();
 });
 
-/* Select all checkbox */
 $('#chk-all').click(function(e) {
     var table = $(e.target).closest('table');
     $('tr:visible :checkbox', table).prop('checked', this.checked);
 });
 
-/* Item search */
 $('#search-sharepoint').keyup(function(e) {
     var searchText = $(this).val().toLowerCase();
     
@@ -740,17 +768,36 @@ $('ul#ul-sharepoint-sites li').click(function(e) {
     $(this).addClass('active');
 });
 
-/* Load more link */
-$('.load-more-link').click(function(e) {
-    var folderid = $(this).data('folderid');
-    var siteid = $(this).data('siteid');
+$('.load-more-folders').click(function(e) {
+	var folderid = $(this).data('folderid');
     var offset = $(this).data('offset');
-    var rid = '<?php echo $rid; ?>';
+	var siteid = $(this).data('siteid');
+	var node = $('#jstree').jstree('get_selected');
 
-    loadItems(folderid, siteid, rid, offset);
+	loadFolders(folderid, node, offset, siteid);
+});
+$('.load-more-content').click(function(e) {
+    var offset = $(this).data('offset');
+	var org = $(this).data('org');
+	var siteid = $(this).data('siteid');
+	
+	loadContent(offset, org, siteid);
+});
+$('.load-more-items').click(function(e) {
+    var folderid = $(this).data('folderid');
+    var offset = $(this).data('offset');
+	var siteid = $(this).data('siteid');
+	var type = $(this).data('type');
+
+    loadItems(folderid, offset, siteid, type);
+});
+$('.load-more-sites').click(function(e) {
+    var offset = $(this).data('offset');
+    var org = $(this).data('org');
+	
+	loadSites(offset, org);
 });
 
-/* Export to file */
 function downloadFile(filetype, itemid, itemname, siteid) {
     var rid = '<?php echo $rid; ?>';
 	var json = '{ "save": { "asZip": "false" } }';
@@ -777,7 +824,6 @@ function downloadFile(filetype, itemid, itemname, siteid) {
 	});
 }
 
-/* Export to ZIP file */
 function downloadZIP(filetype, itemid, itemname, siteid, type) {
     var rid = '<?php echo $rid; ?>';
 
@@ -787,13 +833,13 @@ function downloadZIP(filetype, itemid, itemname, siteid, type) {
 		text: 'Export in progress and your download will start soon.'
 	})
 	
-	if (type == 'multiple') { /* Multiple items export */
+	if (type == 'multiple') {
 		var act = 'exportmultiplesharepointitems';
 		var filetype = 'documents';
 		var ids = '';
 		var filename = 'exported-sharepointitems';
 		
-		if ($("input[name='checkbox-sharepoint']:checked").length === 0) { /* Error handling for multiple export button */
+		if ($("input[name='checkbox-sharepoint']:checked").length === 0) {
 			Swal.close();
 			
 			Swal.fire({
@@ -818,12 +864,12 @@ function downloadZIP(filetype, itemid, itemname, siteid, type) {
 			} \
 		}';
 	} else {
-		if (type == 'single') {	/* Single item export */
+		if (type == 'single') {
 			var act = 'exportsharepointitem';
 			var filename = itemname;
-		} else { /* Full SharePoint export */
+		} else {
 			var act = 'exportsharepoint';
-			var filename = 'sharepoint-' + itemname; /* sharepoint-username */
+			var filename = 'sharepoint-' + itemname;
 		}
 		
 		var json = '{ "save": { "asZip": "true" } }';
@@ -846,11 +892,10 @@ function downloadZIP(filetype, itemid, itemname, siteid, type) {
 	});
 }
 
-/* Restore to original location */
 function restoreToOriginal(filetype, itemid, siteid, type) {
     var rid = '<?php echo $rid; ?>';
 	
-	if (type == 'multiple' && $("input[name='checkbox-sharepoint']:checked").length == 0) { /* Error handling for multiple restore button */
+	if (type == 'multiple' && $("input[name='checkbox-sharepoint']:checked").length == 0) {
 		Swal.fire({
 			type: 'error',
 			title: 'Restore failed',
@@ -940,7 +985,7 @@ function restoreToOriginal(filetype, itemid, siteid, type) {
 				text: 'Restore in progress...'
 			})
 			
-			if (type == 'multiple') { /* Multiple items restore */
+			if (type == 'multiple') {
 				var act = 'restoremultiplesharepointitems';
 				filetype = 'documents';
 				var ids = '';
@@ -963,7 +1008,7 @@ function restoreToOriginal(filetype, itemid, siteid, type) {
 					} \
 				}';
 			} else {
-				if (type == 'single') { /* Single item restore */
+				if (type == 'single') {
 					var act = 'restoresharepointitem';
 					
 					if ((filetype == 'libraries') || (filetype == 'lists')) {
@@ -992,7 +1037,7 @@ function restoreToOriginal(filetype, itemid, siteid, type) {
 							} \
 						}';
 					}
-				} else if (type == 'full') { /* Full SharePoint restore */
+				} else if (type == 'full') {
 					var act = 'restoresharepoint';
 					
 					var json = '{ "restoreTo": \
@@ -1043,7 +1088,6 @@ function enableTree() {
   $('#jstree i.jstree-ocl').off('click.block');
 }
 
-/* SharePoint functions */
 function fillTableDocuments(response, siteid, type) {
     if (response.results.length !== 0) {
         for (var i = 0; i < response.results.length; i++) {
@@ -1131,7 +1175,7 @@ function loadFolderItems(folderid, parent) {
 	$('#loader').removeClass('hide');
 	$('a.load-more-link').addClass('hide');
 	
-    $.post('veeam.php', {'action' : 'getsharepointitems', 'rid' : rid, 'siteid' : siteid, 'type' : 'Folders', 'folderid' : folderid}).done(function(data) {
+    $.post('veeam.php', {'action' : 'getsharepointitems', 'folderid' : folderid, 'offset' : 0, 'rid' : rid, 'siteid' : siteid, 'type' : 'Folders'}).done(function(data) {
         responsefolders = JSON.parse(data);
 
 		if (parent !== null) {
@@ -1215,7 +1259,7 @@ function loadFolderItems(folderid, parent) {
 							
 							if (!childrenFolderidArray.push(responsefolderid)) {
 								$('#jstree').jstree('create_node', treeid, {data: {"folderid" : responsefolderid}, text: responsefoldername});
-								console.log('createB');
+								
 								$('#jstree').on('create_node.jstree', function (e, data) {
 									$('#jstree').jstree('open_node', data.parent);
 								});
@@ -1227,89 +1271,182 @@ function loadFolderItems(folderid, parent) {
 		}
     });
 
+	
+	<?php
+	if (strcmp($type, 'list') === 0) {
+	?>
+	$.post('veeam.php', {'action' : 'getsharepointitems', 'folderid' : folderid, 'offset' : 0, 'rid' : rid, 'siteid' : siteid, 'type' : 'Items'}).done(function(data) {
+		responsedocuments = JSON.parse(data);
+	});
+	<?php
+	} else {
+	?>
+	$.post('veeam.php', {'action' : 'getsharepointitems', 'folderid' : folderid, 'offset' : 0, 'rid' : rid, 'siteid' : siteid, 'type' : 'Documents'}).done(function(data) {
+		responsedocuments = JSON.parse(data);
+	});
+	<?php
+	}
+	?>
+	
 	setTimeout(function(e) {
-		<?php
-		if (strcmp($type, 'list') === 0) {
-		?>
-		$.post('veeam.php', {'action' : 'getsharepointitems', 'rid' : rid, 'siteid' : siteid, 'type' : 'Items', 'folderid' : folderid}).done(function(data) {
-			responsedocuments = JSON.parse(data);
-		});
-		<?php
-		} else {
-		?>
-		$.post('veeam.php', {'action' : 'getsharepointitems', 'rid' : rid, 'siteid' : siteid, 'type' : 'Documents', 'folderid' : folderid}).done(function(data) {
-			responsedocuments = JSON.parse(data);
-		});
-		<?php
-		}
-		?>
-	}, 2000);
-
-    setTimeout(function(e) {
 		if ((typeof responsefolders !== 'undefined' && responsefolders.results.length === 0) && (typeof responsedocuments !== 'undefined' && responsedocuments.results.length === 0)) {
 			$('#table-sharepoint-items tbody').append('<tr><td class="text-center" colspan="6">No items available in this folder.</td></tr>');
+			return;
 		}
 		
-        if (typeof responsefolders !== 'undefined' && responsefolders.results.length !== 0) {
-            fillTableFolders(responsefolders, folderid, siteid);
-        }
+		if (typeof responsefolders !== 'undefined' && responsefolders.results.length !== 0) {
+			fillTableFolders(responsefolders, folderid, siteid);
+		}
 
-        if (typeof responsedocuments !== 'undefined' && responsedocuments.results.length !== 0) {
-            <?php
-            if (strcmp($type, 'list') === 0) {
-            ?>
-            fillTableDocuments(responsedocuments, siteid, 'items');
-            <?php
-            } else {
-            ?>
-            fillTableDocuments(responsedocuments, siteid, 'documents');
-            <?php
-            }
-            ?>
-        }
-
-        if ((typeof responsefolders !== 'undefined' && responsefolders.results.length == '30') || (typeof responsedocuments !== 'undefined' && responsedocuments.results.length == '30')) {
-            $('a.load-more-link').removeClass('hide');
-            $('a.load-more-link').data('offset', 30);
-            $('a.load-more-link').data('folderid', folderid);
-        } else {
-            $('a.load-more-link').addClass('hide');
-        }
+		if (typeof responsedocuments !== 'undefined' && responsedocuments.results.length !== 0) {
+			<?php
+			if (strcmp($type, 'list') === 0) {
+			?>
+			fillTableDocuments(responsedocuments, siteid, 'items');
+			<?php
+			} else {
+			?>
+			fillTableDocuments(responsedocuments, siteid, 'documents');
+			<?php
+			}
+			?>
+		}
+		
+		if (typeof responsefolders !== 'undefined' && responsefolders.results.length >= 50) {
+			$('a.load-more-folders').removeClass('hide');
+			$('a.load-more-folders').data('offset', 50);
+			$('a.load-more-folders').data('folderid', folderid);
+		} else if (typeof responsedocuments !== 'undefined' && responsedocuments.results.length >= 50) {
+			$('a.load-more-items').removeClass('hide');
+			$('a.load-more-items').data('offset', 50);
+			$('a.load-more-items').data('folderid', folderid);
+		} else {
+			$('a.load-more-items').addClass('hide');
+		}
 		
 		$('#loader').addClass('hide');
 		enableTree();
-    }, 3000);
+	}, 2000);	
 }
 
-function loadItems(folderid, siteid, offset) {
+function loadFolders(folderid, node, offset, siteid) {
 	var rid = '<?php echo $rid; ?>';
-    var responsedocuments, responsefolders;
 
-    $.post('veeam.php', {'action' : 'getsharepointitems', 'folderid' : folderid, 'rid' : rid, 'siteid' : siteid, 'offset' : offset, 'type' : 'folders'}).done(function(data) {
-        responsefolders = JSON.parse(data);
+    $.post('veeam.php', {'action' : 'getsharepointfolders', 'folderid' : folderid, 'offset' : offset, 'rid' : rid, 'siteid' : siteid}).done(function(data) {
+        var response = JSON.parse(data);
+
+        if (response.results.length != 0) {
+			if (node.length === 0) {
+				node = '#';
+			}
+			
+			for (var i = 0; i < response.results.length; i++) {
+				$('#jstree').jstree('create_node', node, {data: {"folderid" : response.results[i].id, "jstree" : {"opened" : true}}, text: response.results[i].name});
+			}
+			
+			fillTableFolders(response, folderid, siteid);
+			
+			if (response.results.length >= 150) {
+				$('a.load-more-folders').removeClass('hide');
+				$('a.load-more-folders').data('offset', offset + 50);
+			} else {
+				$('a.load-more-folders').addClass('hide');
+			}
+		}
     });
+}
 
-    $.post('veeam.php', {'action' : 'getsharepointitems', 'folderid' : folderid, 'rid' : rid, 'siteid' : siteid, 'offset' : offset, 'type' : 'documents'}).done(function(data) {
-        responsedocuments = JSON.parse(data);
+function loadItems(folderid, offset, siteid, type) {
+	var rid = '<?php echo $rid; ?>';
+
+    $.post('veeam.php', {'action' : 'getsharepointitems', 'folderid' : folderid, 'offset' : offset, 'rid' : rid, 'siteid' : siteid, 'type' : type}).done(function(data) {
+        var response = JSON.parse(data);
+		
+		if (typeof response !== 'undefined') {
+			fillTableDocuments(response, siteid, type);
+		}
+
+		if (typeof response !== 'undefined' && response.results.length >= 50) {
+			$('a.load-more-link').removeClass('hide');
+			$('a.load-more-link').data('offset', offset + 50);
+			$('a.load-more-link').data('folderid', folderid);
+		} else {
+			$('a.load-more-link').addClass('hide');
+		}
+	});
+}
+
+function loadContent(offset, org, siteid) {
+	var rid = '<?php echo $rid; ?>';
+	var responselibraries, responselists;
+	
+    $.post('veeam.php', {'action' : 'getsharepointcontent', 'offset' : offset, 'rid' : rid, 'siteid' : siteid, 'type' : 'libraries'}).done(function(data) {
+        responselibraries = JSON.parse(data);
     });
+	
+	$.post('veeam.php', {'action' : 'getsharepointcontent', 'offset' : offset, 'rid' : rid, 'siteid' : siteid, 'type' : 'lists'}).done(function(data) {
+        responselists = JSON.parse(data);
+    });
+	
+	setTimeout(function(e) {	
+		if (typeof responselibraries !== 'undefined' && responselibraries.results.length != 0) {
+			for (var i = 0; i < responselibraries.results.length; i++) {
+				$('#ul-sharepoint-sites').append('<li><a data-type="library" href="sharepoint/' + org + '/' + siteid + '/' + responselibraries.results[i].id + '/library">' + responselibraries.results[i].name + '</a></li>');
+			}
+		}
+		
+		setTimeout(function(e) {
+			if (typeof responselists !== 'undefined' && responselists.results.length != 0) {
+				for (var i = 0; i < responselists.results.length; i++) {
+					$('#ul-sharepoint-sites').append('<li><a data-type="list" href="sharepoint/' + org + '/' + siteid + '/' + responselists.results[i].id + '/list">' + responselists.results[i].name + '</a></li>');
+				}
+			}
+			
+			if (typeof responselibraries !== 'undefined' && responselibraries.results.length >= 50) {
+				$('a.load-more-content').removeClass('hide');
+				$('a.load-more-content').data('offset', offset + 50);
+			} else if (typeof responselists !== 'undefined' && responselists.results.length >= 50) {
+				$('a.load-more-content').removeClass('hide');
+				$('a.load-more-content').data('offset', offset + 50);
+			} else {
+				$('a.load-more-content').addClass('hide');
+			}
+		}, 2000);
+	}, 2000);
+}
 
-    setTimeout(function(e) {
-        if (typeof responsefolders !== 'undefined') {
-            fillTableFolders(responsefolders, folderid, siteid);
-        }
+function loadSites(offset, org) {
+	var rid = '<?php echo $rid; ?>';
+	
+    $.post('veeam.php', {'action' : 'getsharepointsites', 'offset' : offset, 'rid' : rid}).done(function(data) {
+        var response = JSON.parse(data);
 
-        if (typeof responsedocuments !== 'undefined') {
-            fillTableDocuments(responsedocuments, siteid);
-        }
-
-        if ((typeof responsefolders !== 'undefined' && responsefolders.results.length == '30') || (typeof responsedocuments !== 'undefined' && responsedocuments.results.length == '30')) {
-            $('a.load-more-link').removeClass('hide');
-            $('a.load-more-link').data('offset', offset + 30);
-            $('a.load-more-link').data('folderid', folderid);
-        } else {
-            $('a.load-more-link').addClass('hide');
-        }
-    }, 2000);
+        if (response.results.length != 0) {
+			for (var i = 0; i < response.results.length; i++) {
+				if ($('#table-sharepoint-sites').length > 0){
+					$('#table-sharepoint-sites tbody').append('<tr> \
+						<td><a href="onedrive/' + org + '/' + response.results[i].id + '">' + response.results[i].name + '</a></td> \
+						<td class="text-center"> \
+						<div class="btn-group dropdown"> \
+						<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
+						<ul class="dropdown-menu dropdown-menu-right"> \
+						<li class="dropdown-header">Restore to</li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'documents\', \'' + response.results[i].name + '\', \'' + response.results[i].id + '\', \'full\')"><i class="fa fa-upload"></i> Original location</a></li> \
+						</ul> \
+						</div> \
+						</td> \
+						</tr>');
+				}
+				$('#ul-sharepoint-sites').append('<li><a href="sharepoint/' + org + '/' + response.results[i].id + '">' + response.results[i].name + '</a></li>');
+			}
+			
+			if (response.results.length >= 50) {
+				$('a.load-more-accounts').data('offset', offset + 50);
+			} else {
+				$('a.load-more-accounts').addClass('hide');
+			}
+		}
+    });
 }
 <?php
 }
