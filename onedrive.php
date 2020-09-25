@@ -48,7 +48,7 @@ if (isset($_SESSION['token'])) {
 ?>
 <nav class="navbar navbar-inverse navbar-static-top">
 	<ul class="nav navbar-header">
-	  <li><a class="navbar-brand navbar-logo" href="/"><img src="images/logo.svg" alt="Veeam Backup for Microsoft Office 365" class="logo" /></a></li>
+	  <li><a class="navbar-brand navbar-logo" href="/"><img src="images/logo.svg" alt="Veeam Backup for Microsoft Office 365" class="logo"></a></li>
 	</ul>
 	<ul class="nav navbar-nav" id="nav">
 	  <li><a href="exchange">Exchange</a></li>
@@ -314,7 +314,7 @@ if (isset($_SESSION['token'])) {
 							</div>
 						</div>
 						<div class="col-sm-10">
-							<input class="form-control search" id="search-onedrive" placeholder="Filter by item..." />
+							<input class="form-control search" id="search-onedrive" placeholder="Filter by item...">
 						</div>
 					</div>
 					<div class="row">
@@ -1168,7 +1168,7 @@ function loadFolderItems(folderid, parent) {
 		responsedocuments = JSON.parse(data);
 	});
 	
-	setTimeout(function(e) {	
+	setTimeout(function(e) {
 		if ((typeof responsefolders !== 'undefined' && responsefolders.results.length === 0) && (typeof responsedocuments !== 'undefined' && responsedocuments.results.length === 0)) {
 			$('#table-onedrive-items tbody').append('<tr><td class="text-center" colspan="6">No items available in this folder.</td></tr>');
 			return;
