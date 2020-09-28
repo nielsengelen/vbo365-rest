@@ -10,8 +10,8 @@ if (empty($host) || empty($port) || empty($version)) {
     exit('Please modify the configuration file first and configure the Veeam Backup for Microsoft Office 365 host, port and RESTful API version settings.');
 }
 
-if (!preg_match('/v[3-4]/', $version)) {
-	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 3 and 4 are supported.');
+if (!preg_match('/v[3-5]/', $version)) {
+	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 3, 4 and 5 are supported.');
 }
 ?>
 <!DOCTYPE html>
@@ -436,7 +436,7 @@ if (isset($_SESSION['token'])) {
 								</tbody>
 							</table>
 							<div class="text-center">
-								<a class="btn btn-default hide load-more-link load-more-items" data-folderid="null" data-mailboxid="<?php echo $uid; ?>" data-offset="0" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more messages</a>
+								<a class="btn btn-default hide load-more-link load-more-items" data-folderid="null" data-mailboxid="<?php echo $uid; ?>" data-offset="50" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more messages</a>
 							</div>
 						</div>
 					</div>

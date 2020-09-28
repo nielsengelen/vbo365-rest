@@ -103,7 +103,11 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 		echo json_encode($mailboxes);
 	}
 	if ($action == 'getmailitems') {
-		$items = $veeam->getMailboxItems($mailboxid, $rid, $folderid);
+		if (isset($offset)) {
+			$items = $veeam->getMailboxItems($mailboxid, $rid, $folderid, $offset);
+		} else {
+			$items = $veeam->getMailboxItems($mailboxid, $rid, $folderid);
+		}
 		
 		echo json_encode($items);
 	}
