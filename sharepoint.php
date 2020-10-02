@@ -21,7 +21,7 @@ if (!preg_match('/v[3-5]/', $version)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><?php echo $title; ?></title>
     <base href="/" />
-    <link rel="shortcut icon" href="images/favicon.ico" />
+    <link rel="shortcut icon" href="favicon.ico" />
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="css/flatpickr.min.css">
     <link rel="stylesheet" type="text/css" href="css/fontawesome.min.css" />

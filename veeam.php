@@ -19,8 +19,18 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 	if (isset($_POST['siteid'])) { $siteid = $_POST['siteid']; }
 	if (isset($_POST['userid'])) { $userid = $_POST['userid']; }
 
+	if (isset($_POST['assertion'])) { $assertion = $_POST['assertion']; }
+	if (isset($_POST['tenantid'])) { $tenantid = $_POST['tenantid']; }
+
 	$veeam = new VBO($host, $port, $version);
-	$veeam->setToken($_SESSION['token']);
+	
+	if (isset($_SESSION['token'])) {
+		$veeam->setToken($_SESSION['token']);
+	}
+	
+	if ($action == 'mfalogin') {
+		$veeam->MFALogin($tenantid, $assertion);
+	}
 
 	/* Jobs Calls */
 	if ($action == 'changejobstate') {
@@ -153,7 +163,11 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 		echo json_encode($folders);
 	}
 	if ($action == 'getonedriveitems') {
-		$items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid, $offset);
+		if (isset($offset)) {
+			$items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid, $offset);
+		} else {
+			$items = $veeam->getOneDriveTree($rid, $userid, $type, $folderid);
+		}
 		
 		echo json_encode($items);
 	}
@@ -185,7 +199,11 @@ if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQU
 
 	/* SharePoint Calls */
 	if ($action == 'getsharepointitems') {
-		$items = $veeam->getSharePointItems($rid, $siteid, $folderid, $type, $offset);
+		if (isset($offset)) {
+			$items = $veeam->getSharePointItems($rid, $siteid, $folderid, $type, $offset);
+		} else {
+			$items = $veeam->getSharePointItems($rid, $siteid, $folderid, $type);
+		}
 
 		echo json_encode($items);
 	}

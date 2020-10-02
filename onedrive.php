@@ -21,7 +21,7 @@ if (!preg_match('/v[3-5]/', $version)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><?php echo $title; ?></title>
     <base href="/" />
-    <link rel="shortcut icon" href="images/favicon.ico" />
+    <link rel="shortcut icon" href="favicon.ico" />
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="css/flatpickr.min.css">
     <link rel="stylesheet" type="text/css" href="css/fontawesome.min.css" />
@@ -691,7 +691,7 @@ $('.load-more-items').click(function(e) {
     var offset = $(this).data('offset');
 	var userid = $(this).data('userid');
     
-    loadItems(folderid, offset, userid);
+    loadItems(userid, folderid, offset);
 });
 
 function downloadFile(filetype, itemid, itemname, userid) {
@@ -1199,7 +1199,7 @@ function loadFolderItems(folderid, parent) {
 	}, 2000);
 }
 
-function loadItems(folderid, offset, userid) {
+function loadItems(userid, folderid, offset) {
 	var rid = '<?php echo $rid; ?>';
 
     $.post('veeam.php', {'action' : 'getonedriveitems', 'folderid' : folderid, 'rid' : rid, 'userid' : userid, 'offset' : offset, 'type' : 'documents'}).done(function(data) {
