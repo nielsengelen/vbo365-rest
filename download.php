@@ -72,15 +72,15 @@ if (!isset($_SESSION['token'])) {
 	if (isset($_POST['ext'])) { $ext = $_POST['ext']; }
 	if (isset($_POST['name'])) { $name = $_POST['name']; }
 	
-	if (isset($_POST['file'])) { 
-		$file =  str_replace('..', '', isset($_POST['file'])?$_POST['file']:'');
-		$filename = basename($name);
+	if (isset($_POST['file'])) {
+		$file = sys_get_temp_dir() . '/' . basename($_POST['file']);
+		$filename = htmlspecialchars(basename($name));
 
 		if ($ext != 'plain')
 			$filename .= '.' . $ext;
 
 		if(!is_file($file))
-			exit();
+			exit('File not found');
 
 		header('Pragma: public');
 		header('Expires: 0');
@@ -96,12 +96,15 @@ if (!isset($_SESSION['token'])) {
 		} else {
 			header('Last-Modified: ' . gmdate ('D, d M Y H:i:s', filemtime ($file)).' GMT');
 			header('Cache-Control: private', false);
-			if ($ext == "plain") {
+			
+			if ($ext == 'plain') {
 				$mime = get_mime_type($filename);
+				
 				header('Content-Type: ' . $mime);
 			} else {
 				header('Content-Type: application/zip');
 			}
+			
 			header('Content-Transfer-Encoding: binary');
 			header('Content-Length: ' . filesize($file));
 			header('Content-Disposition: attachment; filename=" ' . $filename . '"');
@@ -110,8 +113,6 @@ if (!isset($_SESSION['token'])) {
 
 		readfile($file);
 		unlink($file);
-		
-		
 	} else {
 		header('Location: index.php');
 	}

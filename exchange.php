@@ -30,6 +30,7 @@ if (!preg_match('/v[3-5]/', $version)) {
 	<link rel="stylesheet" type="text/css" href="css/jstree.min.css" />
     <script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+	<script src="js/clipboard.min.js"></script>
     <script src="js/fontawesome.min.js"></script>
     <script src="js/flatpickr.js"></script>
 	<script src="js/jquery.redirect.js"></script>
@@ -45,6 +46,16 @@ if (isset($_SESSION['token'])) {
 	
     if (isset($_SESSION['user'])) {
 		$user = $_SESSION['user'];
+	} else {
+		empty($user);
+	}
+	
+	if (isset($_SESSION['authtype'])) {
+		$authtype = $_SESSION['authtype'];
+	}
+	
+	if (isset($_SESSION['applicationid'])) {
+		$applicationid = $_SESSION['applicationid'];
 	}
 ?>
 <nav class="navbar navbar-inverse navbar-static-top">
@@ -73,8 +84,8 @@ if (isset($_SESSION['token'])) {
 
 			echo '<ul id="ul-exchange-users">';
 			
-			if ($check === false && strtolower($administrator) == 'yes') {
-				$org = $veeam->getOrganizations();
+			if (strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
+				$org = $veeam->getOrganizations();				
 				$oid = $_GET['oid'];
 				$menu = false;
 				
@@ -103,12 +114,12 @@ if (isset($_SESSION['token'])) {
 				$org = $veeam->getOrganizationID($rid);
 				$users = $veeam->getMailboxes($rid);
 
-				if ($users == '500') {
+				if ($users === 500) {
 					unset($_SESSION['rid']);
 					?>
 					<script>
 					Swal.fire({
-						type: 'info',
+						icon: 'info',
 						title: 'Restore session expired',
 						text: 'Your restore session has expired.'
 					}).then(function(e) {
@@ -149,10 +160,10 @@ if (isset($_SESSION['token'])) {
 				?>
 				<script>
 				Swal.fire({
-					type: 'info',
+					icon: 'info',
 					showConfirmButton: false,
 					title: 'Restore session running',
-					text: 'Found another restore session running, please stop the session first if you want to restore Exchange items.',
+					text: 'Found another restore session running, please stop the session first if you want to restore Exchange items',
 					<?php
 					if (strcmp($_SESSION['rtype'], 'vesp') === 0) {
 						echo "footer: '<a href=\"/sharepoint\">Go to restore session</a>'";
@@ -176,7 +187,7 @@ if (isset($_SESSION['token'])) {
 		<div class="exchange-container">
 			<?php
 			if (isset($oid) || $menu) {
-				if ($check === false && strtolower($administrator) == 'yes') {
+				if (strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
 					$org = $veeam->getOrganizationByID($oid);
 				}
 			?>
@@ -286,14 +297,14 @@ if (isset($_SESSION['token'])) {
 						</table>
 						<?php
 					} else {
-						if ($check === false && strtolower($administrator) == 'yes') {
+						if (strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
 							echo '<p>No users found for this organization.</p>';
 						} else {
 							echo '<p>Select a point in time and start the restore.</p>';
 						}
 					}
 				} else {
-					if ($check === false && strtolower($administrator) == 'yes') {
+					if (strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
 						echo '<p>Select an organization to start a restore session.</p>';
 					} else {
 						echo '<p>Select a point in time and start the restore.</p>';
@@ -312,7 +323,7 @@ if (isset($_SESSION['token'])) {
 					}
 					?>
 					<div class="row">
-						<div class="col-sm-2 text-center">
+						<div class="col-sm-2 text-center div-browser">
 							<div class="btn-group dropdown">
 								<button class="btn btn-default dropdown-toggle form-control" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Restore selected <span class="caret"></span></button>
 								<ul class="dropdown-menu dropdown-menu-right">
@@ -330,7 +341,7 @@ if (isset($_SESSION['token'])) {
 						</div>
 					</div>
 					<div class="row">
-						<div class="col-sm-2 zeroPadding">
+						<div class="col-sm-2 div-browser zeroPadding">
 							<table class="table table-bordered table-padding table-striped" id="table-exchange-folders">
 								<thead>
 									<tr>
@@ -418,7 +429,7 @@ if (isset($_SESSION['token'])) {
 								</tbody>
 							</table>
 						</div>
-						<div class="col-sm-10 zeroPadding">
+						<div class="col-sm-10 div-browser-items zeroPadding">
 							<div class="wrapper"><div class="loader hide" id="loader"></div></div>
 							<table class="table table-hover table-bordered table-striped table-border" id="table-exchange-items">
 								<thead>
@@ -507,23 +518,23 @@ $('#logout').click(function(e) {
 	e.preventDefault();
 	
 	const swalWithBootstrapButtons = Swal.mixin({
-	  confirmButtonClass: 'btn btn-success btn-margin',
-	  cancelButtonClass: 'btn btn-danger',
+	  customClass: {
+		  confirmButton: 'btn btn-success btn-margin',
+		  cancelButton: 'btn btn-danger'
+      },
 	  buttonsStyling: false,
-	})
+	});
 	
 	swalWithBootstrapButtons.fire({
-		type: 'question',
+		icon: 'question',
 		title: 'Logout',
 		text: 'You are about to logout. Are you sure you want to continue?',
 		showCancelButton: true,
-		confirmButtonText: 'Yes',
-		cancelButtonText: 'No',
-	}).then((result) => {
-		if (result.value) {
-			$.post('index.php', {'logout' : true}, function(data) {
-				window.location.replace('index.php');
-			});
+		confirmButtonText: 'Logout',
+		cancelButtonText: 'Cancel',
+	}).then(function(result) {
+		if (result.isConfirmed) {
+			$.redirect('index.php', {'logout' : true}, 'POST');
 		  } else {
 			return;
 		}
@@ -548,7 +559,7 @@ $('.btn-start-restore').click(function(e) {
 			$('#pit-date').addClass('errorClass');
 			
 			Swal.fire({
-				type: 'info',
+				icon: 'info',
 				title: 'No date selected',
 				text: 'Please select a date first before starting the restore or use the \"explore last backup\" button.'
 			})
@@ -568,15 +579,15 @@ $('.btn-start-restore').click(function(e) {
     $.post('veeam.php', {'action' : 'startrestore', 'json' : json, 'id' : oid}).done(function(data) {
         if (data.match(/([a-zA-Z0-9]{8})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{12})/g)) {
 			Swal.fire({
-				type: 'success',
+				icon: 'success',
 				title: 'Session started',
-				text: 'Restore session has been started and you can now perform restores.'
+				text: 'Restore session has been started and you can now perform restores'
 			}).then(function(e) {
 				window.location.href = 'exchange';
 			});
         } else {
             Swal.fire({
-				type: 'error',
+				icon: 'error',
 				title: 'Error starting restore session',
 				text: '' + data
 			})
@@ -585,32 +596,50 @@ $('.btn-start-restore').click(function(e) {
         }
     });
 });
+<?php
+if (isset($rid)) {
+?>
 $('.btn-stop-restore').click(function(e) {
     var rid = '<?php echo $rid; ?>';
 
 	const swalWithBootstrapButtons = Swal.mixin({
-	  confirmButtonClass: 'btn btn-success btn-margin',
-	  cancelButtonClass: 'btn btn-danger',
+	  customClass: {
+		  confirmButton: 'btn btn-success btn-margin',
+		  cancelButton: 'btn btn-danger'
+      },
 	  buttonsStyling: false,
-	})
+	  focusConfirm: false,
+	});
 	
 	swalWithBootstrapButtons.fire({
-		type: 'question',
+		icon: 'question',
 		title: 'Stop the restore session?',
-		text: 'This will terminate any restore options for the specific point in time.',
+		text: 'This will terminate any restore options for the specific point in time',
 		showCancelButton: true,
 		confirmButtonText: 'Stop',
 		cancelButtonText: 'Cancel',
-	}).then((result) => {
-		if (result.value) {
-			$.post('veeam.php', {'action' : 'stoprestore', 'id' : rid}).done(function(data) {
-				swalWithBootstrapButtons.fire({
-					type: 'success', 
-					title: 'Restore session was stopped',
-					text: 'The restore session was stopped successfully.',
-				}).then(function(e) {
-					window.location.href = 'exchange';
-				});
+	}).then(function(result) {
+		if (result.isConfirmed) {
+			$.post('veeam.php', {'action' : 'stoprestore', 'rid' : rid}).done(function(data) {
+				if (data === 'success') {
+					swalWithBootstrapButtons.fire({
+						icon: 'success', 
+						title: 'Restore session was stopped',
+						text: 'The restore session was stopped successfully',
+					}).then(function(e) {
+						window.location.href = 'exchange';
+					});
+				} else {
+					var response = JSON.parse(data);
+				
+					swalWithBootstrapButtons.fire({
+						icon: 'error', 
+						title: 'Failed to stop restore session',
+						text: '' + response.slice(0, -1),
+					}).then(function(e) {
+						window.location.href = 'exchange';
+					});
+				}
 			});
 		  } else {
 			return;
@@ -618,9 +647,6 @@ $('.btn-stop-restore').click(function(e) {
 	})
 });
 
-<?php
-if (isset($rid)) {
-?>
 $('hide.bs.dropdown').dropdown(function(e) {
     $(e.target).find('>.dropdown-menu:first').slideUp();
 });
@@ -676,9 +702,10 @@ function downloadMsg(itemid, mailboxid, mailsubject) {
     var json = '{ "savetoMsg": null }';
 	
 	Swal.fire({
-		type: 'info',
+		icon: 'info',
 		title: 'Download is starting',
-		text: 'Download will start soon.'
+		text: 'Download will start soon',
+		allowOutsideClick: false,
 	})
     
 	$.post('veeam.php', {'action': 'exportmailitem', 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {	
@@ -686,7 +713,7 @@ function downloadMsg(itemid, mailboxid, mailsubject) {
 			$.redirect('download.php', {ext : 'msg', file : data, name : mailsubject}, 'POST');
 		} else {
 			Swal.fire({
-				type: 'error',
+				icon: 'error',
 				title: 'Export failed',
 				text: 'Export failed.'
 			})
@@ -699,9 +726,10 @@ function downloadPST(itemid, mailboxid, mailsubject, type) {
     var rid = '<?php echo $rid; ?>';
 	
 	Swal.fire({
-		type: 'info',
+		icon: 'info',
 		title: 'Download is starting',
-		text: 'Export in progress and your download will start soon.'
+		text: 'Export in progress and your download will start soon',
+		allowOutsideClick: false,
 	})
 	
 	if (type == 'multiple') {
@@ -713,8 +741,8 @@ function downloadPST(itemid, mailboxid, mailsubject, type) {
 			Swal.close();
 			
 			Swal.fire({
-				type: 'error',
-				title: 'Restore failed',
+				icon: 'info',
+				title: 'Unable to restore',
 				text: 'No items have been selected.'
 			})
 			
@@ -748,14 +776,14 @@ function downloadPST(itemid, mailboxid, mailsubject, type) {
 		}';
 	}
 
-	$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {		
-		if (data && data != '500') {
-			$.redirect('download.php', {ext : 'pst', file : data, name : mailsubject}, 'POST');
-				
+	$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
+		if (data && data != 500) {
+			$.redirect('download.php', {'ext' : 'pst', 'file' : data, 'name' : mailsubject}, 'POST');
+			
 			Swal.close();
 		} else {
 			Swal.fire({
-				type: 'error',
+				icon: 'error',
 				title: 'Export failed',
 				text: '' + data
 			})
@@ -770,65 +798,66 @@ function restoreToDifferent(itemid, mailboxid, type) {
 	
 	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) {
 		Swal.fire({
-			type: 'error',
-			title: 'Restore failed',
+			icon: 'info',
+			title: 'Unable to restore',
 			text: 'No items have been selected.'
 		})
 		return;
 	}
 	
 	const swalWithBootstrapButtons = Swal.mixin({
-	  confirmButtonClass: 'btn btn-success',
-	  cancelButtonClass: 'btn btn-danger btn-margin',
+	  customClass: {
+		  confirmButton: 'btn btn-success btn-margin-restore',
+		  cancelButton: 'btn btn-danger'
+      },
 	  buttonsStyling: false,
-	  input: 'text'
-	})
+	  input: 'text',
+	});
 	
 	swalWithBootstrapButtons.fire({
-		title: 'Restore to a different location',
+		title: 'Restore to different location',
 		html: 
 			'<form method="POST">' +
 			'<div class="form-group row">' +
-			'<label for="restore-different-mailbox" class="col-sm-4 col-form-label text-right">Target mailbox:</label>' +
-			'<div class="col-sm-8"><input type="text" class="form-control restoredata" id="restore-different-mailbox" placeholder="user@example.onmicrosoft.com"></input></div>' +
+			'<label for="restore-different-mailbox" class="col-sm-4 text-left">Target mailbox:</label>' +
+			'<div class="col-sm-8"><input type="text" class="form-control restoredata" id="restore-different-mailbox" placeholder="user@example.onmicrosoft.com"></div>' +
 			'</div>' +
 			'<div class="form-group row">' +
-			'<label for="restore-different-server" class="col-sm-4 col-form-label text-right">Target server:</label>' +
-			'<div class="col-sm-8"><input type="text" class="form-control restoredata" id="restore-different-server" placeholder="outlook.office365.com" value="outlook.office365.com"></input></div>' +
+			'<label for="restore-different-server" class="col-sm-4 text-left">Target server:</label>' +
+			'<div class="col-sm-8"><input type="text" class="form-control restoredata" id="restore-different-server" placeholder="outlook.office365.com" value="outlook.office365.com"></div>' +
 			'</div>' +
 			'<div class="form-group row">' +
-			'<label for="restore-different-user" class="col-sm-4 col-form-label text-right">Username:</label>' +
-			'<div class="col-sm-8"><input type="text" class="form-control restoredata" id="restore-different-user" placeholder="user@example.onmicrosoft.com"></input></div>' +
+			'<label for="restore-different-user" class="col-sm-4 text-left">Username:</label>' +
+			'<div class="col-sm-8"><input type="text" class="form-control restoredata" id="restore-different-user" placeholder="user@example.onmicrosoft.com"></div>' +
 			'</div>' +
 			'<div class="form-group row">' +
-			'<label for="restore-different-pass" class="col-sm-4 col-form-label text-right">Password:</label>' +
-			'<div class="col-sm-8"><input type="password" class="form-control restoredata" id="restore-different-pass" placeholder="password"></input></div>' +
+			'<label for="restore-different-pass" class="col-sm-4 text-left">Password:</label>' +
+			'<div class="col-sm-8"><input type="password" class="form-control restoredata" id="restore-different-pass" placeholder="password"></div>' +
 			'</div>' + 
 			'<div class="form-group row">' + 
-			'<label for="restore-different-folder" class="col-sm-4 col-form-label text-right">Folder:</label>' +
-			'<div class="col-sm-8"><input type="text" class="form-control" id="restore-different-folder" placeholder="Custom folder (optional)"></input></div>' +
-			'<br><h6>By default items will be restored in a folder named <em>Restored-via-web-client</em>.</h6>' +
+			'<label for="restore-different-folder" class="col-sm-4 text-left">Folder:</label>' +
+			'<div class="col-sm-8"><input type="text" class="form-control" id="restore-different-folder" placeholder="Custom folder (optional)">' +
+			'<h6 class="text-left">By default items will be restored in a folder named <em>Restored-via-web-client</em>.</h6>' +
+			'</div>' +
 			'</div>' +
 			'</form>',
-		focusConfirm: false,
-		showCancelButton: true,
 		confirmButtonText: 'Restore',
 		cancelButtonText: 'Cancel',
+		allowOutsideClick: false,
+		focusConfirm: false,
 		reverseButtons: true,
+		showCancelButton: true,
 		inputValidator: () => {
-			var elem = document.getElementById('swal2-validation-message');
-			elem.style.setProperty('margin', '10px 0px', '');
-			
 			var restoredata = Object.values(document.getElementsByClassName('restoredata'));
-			var errors = [ 'No target mailbox defined.', 'No target mailbox server defined.', 'No username defined.', 'No password defined.' ];
+			var errors = [ 'No target mailbox defined', 'No target mailbox server defined', 'No username defined', 'No password defined' ];
 			
 			for (var i = 0; i < restoredata.length; i++) {
 				if (!restoredata[i].value)
 					return errors[i];
 			}
 		},
-		onBeforeOpen: function (dom) {
-			swal.getInput().style.display = 'none';
+		willOpen: function (dom) {
+			swalWithBootstrapButtons.getInput().style.display = 'none';
 		},
 		preConfirm: function() {
 		   return new Promise(function(resolve) {
@@ -841,7 +870,7 @@ function restoreToDifferent(itemid, mailboxid, type) {
 			});
 		},
 	}).then(function(result) {
-		if (result.value) {
+		if (result.isConfirmed) {
 			var user = $('#restore-different-user').val();
 			var pass = $('#restore-different-pass').val();
 			var server = $('#restore-different-server').val();
@@ -849,9 +878,10 @@ function restoreToDifferent(itemid, mailboxid, type) {
 			var mailbox = $('#restore-different-mailbox').val();
 			
 			Swal.fire({
-				type: 'info',
-				title: 'Item restore in progress',
-				text: 'Restore in progress...'
+				icon: 'info',
+				title: 'Item restore',
+				text: 'Restore in progress...',
+				allowOutsideClick: false,
 			})
 			
 			if (typeof folder === undefined || !folder) {
@@ -910,11 +940,41 @@ function restoreToDifferent(itemid, mailboxid, type) {
 			}
 
 			$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
-				Swal.fire({
-					type: 'info',
-					title: 'Item restore',
-					text: '' + data
-				})
+				var response = JSON.parse(data);
+				
+				if (response['restoreFailed'] === undefined) {
+					var result = '';
+				
+					if (response['createdItemsCount'] >= '1') {
+						result += response['createdItemsCount'] + ' item(s) successfully created<br>';
+					}
+					
+					if (response['mergedItemsCount'] >= '1') {
+						result += response['mergedItemsCount'] + ' item(s) merged<br>';
+					}
+					
+					if (response['failedItemsCount'] >= '1') {
+						result += response['failedItemsCount'] + ' item(s) failed<br>';
+					}
+					
+					if (response['skippedItemsCount'] >= '1') {
+						result += response['skippedItemsCount'] + ' item(s) skipped';
+					}
+				
+					Swal.fire({
+						icon: 'info',
+						title: 'Item restore',
+						html: '' + result,
+						allowOutsideClick: false,
+					})
+				} else {
+					Swal.fire({
+						icon: 'info',
+						title: 'Item restore',
+						html: 'Restore failed: ' + response['restoreFailed'],
+						allowOutsideClick: false,
+					})
+				}
 			});
 		} else {
 			return;
@@ -927,113 +987,345 @@ function restoreToOriginal(itemid, mailboxid, type) {
 
 	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) {
 		Swal.fire({
-			type: 'error',
-			title: 'Restore failed',
+			icon: 'info',
+			title: 'Unable to restore',
 			text: 'No items have been selected.'
 		})
 		return;
 	}
 	
 	const swalWithBootstrapButtons = Swal.mixin({
-	  confirmButtonClass: 'btn btn-success',
-	  cancelButtonClass: 'btn btn-danger btn-margin',
+ 	  title: 'Restore to original location',
+	  allowOutsideClick: false,
 	  buttonsStyling: false,
-	  input: 'text'
-	})
+	  focusConfirm: false,
+	  input: 'text',
+	  reverseButtons: true,
+	  showCancelButton: true,
+	  cancelButtonText: 'Cancel',
+	  confirmButtonText: 'Next',
+	  customClass: {
+		  confirmButton: 'btn btn-success btn-margin-restore',
+		  cancelButton: 'btn btn-danger',
+      }
+	});
 	
 	swalWithBootstrapButtons.fire({
-		title: 'Restore to the original location',
-		html: 
-			'<form method="POST">' +
-			'<div class="form-group row">' +
-			'<label for="restore-original-user" class="col-sm-4 col-form-label text-right">Username:</label>' +
-			'<div class="col-sm-8"><input type="text" class="form-control restoredata" id="restore-original-user" placeholder="user@example.onmicrosoft.com"></input></div>' +
-			'</div>' +
-			'<div class="form-group row">' +
-			'<label for="restore-original-pass" class="col-sm-4 col-form-label text-right">Password:</label>' +
-			'<div class="col-sm-8"><input type="password" class="form-control restoredata" id="restore-original-pass" placeholder="password"></input></div>' +
-			'</div>' +
-			'</form>',
-		focusConfirm: false,
-		showCancelButton: true,
-		confirmButtonText: 'Restore',
-		cancelButtonText: 'Cancel',
-		reverseButtons: true,
-		inputValidator: () => {
-			var elem = document.getElementById('swal2-validation-message');
-			elem.style.setProperty('margin', '10px 0px', '');
-			
-			var restoredata = Object.values(document.getElementsByClassName("restoredata"));
-			var errors = [ 'No username defined.', 'No password defined.' ];
-			
-			for (var i = 0; i < restoredata.length; i++) {
-				if (!restoredata[i].value)
-					return errors[i];
-			}
+		text: 'Select authentication method',
+		input: 'select',
+		inputOptions: {
+		<?php 
+		if ($authtype === 'basic') {
+		?>
+		  'basic' : 'Basic Authentication',
+		  'mfa' : 'Modern Authentication',
+		<?php
+		} else {
+		?>
+		  'mfa' : 'Modern Authentication',
+		  'basic' : 'Basic Authentication',
+		<?php
+		}
+		?>
 		},
-		onBeforeOpen: function (dom) {
-			swal.getInput().style.display = 'none';
-		},
-		preConfirm: function() {
-		   return new Promise(function(resolve) {
-				resolve([
-					$('#restore-original-user').val(),
-					$('#restore-original-pass').val(),
-				 ]);
-			});
-		},
-	}).then(function(result) {
-		if (result.value) {
-			var user = $('#restore-original-user').val();
-			var pass = $('#restore-original-pass').val();
-			
-			Swal.fire({
-				type: 'info',
-				title: 'Item restore in progress',
-				text: 'Restore in progress...'
-			})
+		inputValidator: (value) => {
+			return new Promise((resolve) => {
+				if (value === 'basic') {
+					swalWithBootstrapButtons.fire({
+						html:
+							'<form class="form-horizontal">' +
+							'<div class="form-group margin-left">' +
+							'<label for="restore-original-username" class="col-sm-4 control-label">Username:</label>' +
+							'<div class="col-sm-8">' +
+							'<input type="text" class="form-control restoredata" id="restore-original-username" placeholder="user@example.onmicrosoft.com" autocomplete="off">' +
+							'</div>' +
+							'</div>' +
+							'<div class="form-group">' +
+							'<label for="restore-original-password" class="col-sm-4 control-label">Password:</label>' +
+							'<div class="col-sm-8">' +
+							'<input type="password" class="form-control restoredata" id="restore-original-password" placeholder="password" autocomplete="off">' +
+							'</div>' +
+							'</div>' +
+							'</form>',
+						confirmButtonText: 'Restore',
+						cancelButtonText: 'Cancel',
+						inputValidator: () => {
+							var restoredata = Object.values(document.getElementsByClassName('restoredata'));
+							var errors = [ 'No username defined', 'No password defined' ];
+							
+							for (var i = 0; i < restoredata.length; i++) {
+								if (!restoredata[i].value)
+									return errors[i];
+							}
+						},
+						willOpen: () => {
+							Swal.getInput().style.display = 'none';
+						},
+						preConfirm: function() {
+						   return new Promise(function(resolve) {
+								resolve([
+									$('#restore-original-username').val(),
+									$('#restore-original-password').val(),
+								 ]);
+							});
+						}
+					}).then(function(result) {
+						if (result.isConfirmed) {
+							var user = $('#restore-original-username').val();
+							var pass = $('#restore-original-password').val();
+							
+							Swal.fire({
+								icon: 'info',
+								title: 'Item restore',
+								text: 'Restore in progress...',
+								allowOutsideClick: false,
+							})
 
-			if (type == 'multiple') {
-				var act = 'restoremultiplemailitems';
-				var ids = '';
-				
-				$("input[name='checkbox-mail']:checked").each(function(e) {
-					ids = ids + '{ "Id": "' + this.value + '" }, ';
-				});
-				
-				var json = '{ "restoretoOriginallocation": \
-					{ "userName": "' + user + '", \
-					  "userPassword": "' + pass + '", \
-					  "items": [ \
-						' + ids + ' \
-					\ ] \
-					} \
-				}';
-			} else {
-				if (type == 'single') {
-					var act = 'restoremailitem';
-				} else if (type == 'full') {
-					var act = 'restoremailbox';
+							if (type == 'multiple') {
+								var act = 'restoremultiplemailitems';
+								var ids = '';
+								
+								$("input[name='checkbox-mail']:checked").each(function(e) {
+									ids = ids + '{ "Id": "' + this.value + '" }, ';
+								});
+								
+								var json = '{ "restoretoOriginallocation": \
+									{ "userName": "' + user + '", \
+									  "userPassword": "' + pass + '", \
+									  "items": [ \
+										' + ids + ' \
+									\ ] \
+									} \
+								}';
+							} else {
+								if (type == 'single') {
+									var act = 'restoremailitem';
+								} else if (type == 'full') {
+									var act = 'restoremailbox';
+								}
+								
+								var json = '{ "restoretoOriginallocation": \
+									{ "userName": "' + user + '", \
+									  "userPassword": "' + pass + '", \
+									} \
+								}';
+							}
+							
+							$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
+								var response = JSON.parse(data);
+								
+								if (response['restoreFailed'] === undefined) {
+									var result = '';
+								
+									if (response['createdItemsCount'] >= '1') {
+										result += response['createdItemsCount'] + ' item(s) successfully created<br>';
+									}
+									
+									if (response['mergedItemsCount'] >= '1') {
+										result += response['mergedItemsCount'] + ' item(s) merged<br>';
+									}
+									
+									if (response['failedItemsCount'] >= '1') {
+										result += response['failedItemsCount'] + ' item(s) failed<br>';
+									}
+									
+									if (response['skippedItemsCount'] >= '1') {
+										result += response['skippedItemsCount'] + ' item(s) skipped';
+									}
+								
+									Swal.fire({
+										icon: 'info',
+										title: 'Item restore',
+										html: '' + result,
+										allowOutsideClick: false,
+									})
+								} else {
+									Swal.fire({
+										icon: 'info',
+										title: 'Item restore',
+										html: 'Restore failed: ' + response['restoreFailed'],
+										allowOutsideClick: false,
+									})
+								}
+							});
+						}
+					});
+				} else {
+					swalWithBootstrapButtons.fire({
+						html: 
+							'<form class="form-horizontal">' +
+							'<div class="form-group margin-left">' +
+							'<label for="restore-original-applicationid" class="col-sm-4 control-label">Application ID:</label>' +
+							'<div class="col-sm-8">' +
+							<?php 
+							if ($authtype === 'basic') {
+							?>
+							'<input type="text" class="form-control restoredata" id="restore-original-applicationid">' +
+							<?php
+							} else {
+							?>
+							'<input type="text" class="form-control restoredata" id="restore-original-applicationid" value="<?php echo $applicationid; ?>">' +
+							<?php
+							}
+							?>
+							'</div>' +
+							'</div>' +
+							'</form>',
+						confirmButtonText: 'Next',
+						cancelButtonText: 'Cancel',
+						inputValidator: () => {
+							var restoredata = Object.values(document.getElementsByClassName('restoredata'));
+							var errors = [ 'No Application ID defined.' ];
+							
+							for (var i = 0; i < restoredata.length; i++) {
+								if (!restoredata[i].value)
+									return errors[i];
+							}
+						},
+						willOpen: () => {
+							Swal.getInput().style.display = 'none';
+						},
+						preConfirm: function() {
+						   return new Promise(function(resolve) {
+								resolve([
+									$('#restore-original-applicationid').val(),
+								 ]);
+							});
+						}
+					}).then(function(result) {
+						if (result.isConfirmed) {
+							var clipboard = new ClipboardJS('#btn-copy');
+							var applicationid = $('#restore-original-applicationid').val();
+							var json = '{ "targetApplicationId" : "' + applicationid + '", }';
+							
+							clipboard.on('success', function(e) {
+							  setTooltip('Copied!');
+							  hideTooltip();
+							});
+							clipboard.on('error', function(e) {
+							  setTooltip('Failed!');
+							  hideTooltip();
+							});
+							
+							Swal.fire({
+								title: 'Restore to original location',
+								text: 'Loading, please wait...',
+							});
+							
+							$.post('veeam.php', {'action' : 'getrestoredevicecode', 'rid' : rid, 'json' : json}).done(function(data) {
+								var response = JSON.parse(data);
+								var usercode = response['userCode'];
+
+								swalWithBootstrapButtons.fire({
+									html: 
+										'<form class="form-horizontal">' +
+										'<div class="form-group text-left margin-left">' +
+										'<span>To continue, open <a href="https://microsoft.com/devicelogin" target="_blank">https://microsoft.com/devicelogin</a> and enter the below code to authenticate.</span><br><br>' +
+										'<div class="row">' +
+										'<div class="col-sm-4"><input type="text" class="form-control" id="restore-original-usercode" value="' + usercode + '" readonly></div>' +
+										'<div class="col-sm-8"><button type="button" class="btn form-check" id="btn-copy" data-clipboard-target="#restore-original-usercode" data-placement="right">Copy to clipboard</button></div><br><br>' +
+										'</div>' + 
+										'</div>' +
+										'</form>',
+									confirmButtonText: 'Restore',
+									cancelButtonText: 'Cancel',
+									willOpen: () => {
+										Swal.getInput().style.display = 'none';
+									},
+								}).then(function(result) {
+									if (result.isConfirmed) {
+										Swal.fire({
+											icon: 'info',
+											title: 'Item restore',
+											text: 'Restore in progress...',
+											allowOutsideClick: false,
+										})
+
+										if (type == 'multiple') {
+											var act = 'restoremultiplemailitems';
+											var ids = '';
+											
+											$("input[name='checkbox-mail']:checked").each(function(e) {
+												ids = ids + '{ "Id": "' + this.value + '" }, ';
+											});
+											
+											var json = '{ "restoretoOriginallocation": \
+												{ "userCode": "' + usercode + '", \
+												  "items": [ \
+													' + ids + ' \
+												\ ] \
+												} \
+											}';
+										} else {
+											if (type == 'single') {
+												var act = 'restoremailitem';
+											} else if (type == 'full') {
+												var act = 'restoremailbox';
+											}
+											
+											var json = '{ "restoretoOriginallocation": \
+												{ "userCode": "' + usercode + '", \
+												} \
+											}';
+										}
+										
+										$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
+											var response = JSON.parse(data);
+											
+											if (response['restoreFailed'] === undefined) {
+												var result = '';
+											
+												if (response['createdItemsCount'] >= '1') {
+													result += response['createdItemsCount'] + ' item(s) successfully created<br>';
+												}
+												
+												if (response['mergedItemsCount'] >= '1') {
+													result += response['mergedItemsCount'] + ' item(s) merged<br>';
+												}
+												
+												if (response['failedItemsCount'] >= '1') {
+													result += response['failedItemsCount'] + ' item(s) failed<br>';
+												}
+												
+												if (response['skippedItemsCount'] >= '1') {
+													result += response['skippedItemsCount'] + ' item(s) skipped';
+												}
+											
+												Swal.fire({
+													icon: 'info',
+													title: 'Item restore',
+													html: '' + result,
+													allowOutsideClick: false,
+												})
+											} else {
+												Swal.fire({
+													icon: 'info',
+													title: 'Item restore',
+													html: 'Restore failed: ' + response['restoreFailed'],
+													allowOutsideClick: false,
+												})
+											}
+										});
+										
+									}
+								});
+							});
+						}
+					});
 				}
-				
-				var json = '{ "restoretoOriginallocation": \
-					{ "userName": "' + user + '", \
-					  "userPassword": "' + pass + '", \
-					} \
-				}';
-			}
-			
-			$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
-				Swal.fire({
-					type: 'info',
-					title: 'Item restore',
-					text: '' + data
-				})
-			});
-		  } else {
-			return;
+			})
 		}
 	});
+}
+
+function hideTooltip() {
+  setTimeout(function() {
+	  $('#btn-copy').tooltip('hide');
+  }, 1000);
+}
+
+function setTooltip(message) {
+  $('#btn-copy').tooltip('hide').attr('data-original-title', message).tooltip('show');
 }
 
 function disableTree() {
@@ -1045,6 +1337,7 @@ function disableTree() {
     return false;
   });
 }  
+
 function enableTree() {
   $('#jstree li.jstree-node').each(function(e) {
     $('#jstree').jstree('enable_node', this.id)
@@ -1154,7 +1447,7 @@ function loadMailboxFolders(mailboxid, offset) {
     $.post('veeam.php', {'action' : 'getmailboxfolders', 'mailboxid' : mailboxid, 'offset' : offset, 'rid' : rid}).done(function(data) {
         var response = JSON.parse(data);
 
-        if (response.results.length != 0) {		
+        if (response.results.length != 0) {
 			var icon, type;
 			
 			for (var i = 0; i < response.results.length; i++) {
@@ -1307,7 +1600,7 @@ function loadMessages(mailboxid, folderid, offset) {
 		?>
 		<script>
 		Swal.fire({
-			type: 'info',
+			icon: 'info',
 			title: 'Session expired',
 			text: 'Your session has expired and requires you to log in again.'
 		}).then(function(e) {
