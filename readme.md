@@ -95,9 +95,7 @@ SharePoint view:
 
 This serves as an example on how to work with the RESTful API calls and should be tested before using it in production. Feel free to modify and re-use it however many calls are done with default values which can be modified if needed.
 
-## ❗ Known issues
-
-- Current portal does not support logging in with MFA with security defaults (App based)
+## ❗ Known issues/notes
 
 **Note:** There is currently no SSL verification due to self signed certificate testing, please change settings 'verify' to true or remove the specific line accordingly in `veeam.class.php`.
 
