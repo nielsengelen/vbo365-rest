@@ -72,6 +72,15 @@ If this doesn't work, modify the original config.php file with your Veeam Backup
 **_Remember to enable mod_rewrite as described in the dependencies._**
 **_Remove the setup.php file once this is done._**
 
+### Run with Docker
+
+Adjust timezone in `Dockerfile` as required.
+
+```bash
+docker build -t vbo365-rest:latest .
+docker run --rm --name vbo365-rest -p 8080:80 -d vbo365-rest:latest
+```
+
 ### Usage
 
 Open a webbrowser and go to index.php. From here you can either login as an admin or a tenant.
