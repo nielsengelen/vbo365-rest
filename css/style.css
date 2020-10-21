@@ -248,6 +248,19 @@ textarea.noresize {
 .btn-margin {
   margin-right: 10px;
 }
+.btn-margin-restore {
+  margin-left: 10px;	
+}
+.div-browser {
+  min-width: 200px;
+}
+.div-browser-items: {
+  min-width: 800px;
+  width: auto !important;
+}
+.div-margin {
+  margin-left: 10px;
+}
 .errorClass { 
   border: 1px solid red;
 }
@@ -280,7 +293,7 @@ textarea.noresize {
 
 .modal {
   text-align: center;
-  padding: 0!important;
+  padding: 0 !important;
 }
 .modal-backdrop {
   z-index: -1;
@@ -288,7 +301,7 @@ textarea.noresize {
 .modal:before {
   display: inline-block;
   height: 100%;
-  margin-right: -4px;/* Adjusts for spacing */
+  margin-right: -4px;
   vertical-align: middle;
 }
 .modal-dialog {
@@ -305,17 +318,49 @@ table.table-padding {
   margin-bottom: 20px;
   padding: 0 !important;
 }
-table.table-small {
-  margin-bottom: 20px;
-  margin-left: 40px;
-  margin-top: 10px;
-  width: 92%;
-}
 .zeroPadding {
   padding: 0 !important;
   background: #FFFFFF;
 }
 
+.btn-login {
+  background: #54b948;
+  color: #fff;
+}
+.btn-login:hover {
+  background: #54b948;
+  color: #fff;
+  text-decoration: underline;
+}
+.btn-link {
+  background: #95a5a6;
+  color: #fff;
+  margin-top: 15px;
+}
+.btn-link:hover {
+  background: #95a5a6;
+  color: #fff;
+  margin-top: 15px;
+}
+.btn-next {
+  background: #54b948;
+  color: #fff;
+}
+.divider-line {
+  border-bottom: 3px solid #ccc;
+  color: #333;
+  font-family: Arial;
+  font-weight: bold;
+  font-size: 12px;
+  position: relative;
+  text-align: center;
+}
+.divider-line span {
+  background: #fff;
+  padding: 0 15px;
+  position: relative;
+  top: 10px;
+}
 .input-loginform {
   height: 50px;
   margin: 0;
@@ -323,7 +368,6 @@ table.table-small {
   vertical-align: middle;
   background: #fff;
   border: 1px solid #000;
-  font-family: 'Roboto', sans-serif;
   font-size: 16px;
   font-weight: 300;
   line-height: 50px;
@@ -357,9 +401,7 @@ table.table-small {
 .banner-sec {
   background: url("../images/login.jpg") no-repeat bottom;
   background-size: cover;
-  min-height: 500px;
-  border-radius: 0 10px 10px 0;
-  padding: 0;
+  min-height: 580px;
 }
 .login-container {
   background: #fff;
@@ -372,12 +414,12 @@ table.table-small {
 }
 .login-sec h2 {
   margin-bottom: 30px;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 30px;
   color: #54b948;
 }
 .login-sec h2:after {
-  content: " ";
+  content: "";
   width: 100px;
   height: 5px;
   background: #cbeac8;
@@ -386,11 +428,6 @@ table.table-small {
   border-radius: 3px;
   margin-left: auto;
   margin-right: auto;
-}
-.btn-login {
-  background: #54b948;
-  color: #fff;
-  font-weight:600;
 }
 
 .loader {
