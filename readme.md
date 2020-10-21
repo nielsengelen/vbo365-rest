@@ -95,6 +95,16 @@ SharePoint view:
 
 This serves as an example on how to work with the RESTful API calls and should be tested before using it in production. Feel free to modify and re-use it however many calls are done with default values which can be modified if needed.
 
+## 🐋 Run with Docker
+
+Adjust timezone in `Dockerfile` as required.
+
+```bash
+docker build -t vbo365-rest:latest .
+docker run --rm --name vbo365-rest -p 8080:80 -d vbo365-rest:latest
+```
+
+
 ## ❗ Known issues/notes
 
 **Note:** There is currently no SSL verification due to self signed certificate testing, please change settings 'verify' to true or remove the specific line accordingly in `veeam.class.php`.
