@@ -151,7 +151,7 @@ if (isset($_SESSION['token'])) {
 					
 					if (count($libraries['results']) >= 50 || count($lists['results']) >= 50) {
 						echo '<div class="text-center">';
-						echo '<a class="btn btn-default load-more-link load-more-content" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" data-siteid="' . $sid . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more</a>';
+						echo '<a class="btn btn-default load-more-link load-more-content" data-org="' . $org['id'] . '" data-offset="50" data-siteid="' . $sid . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more</a>';
 						echo '</div>';
 					}
 				} else {
@@ -191,7 +191,7 @@ if (isset($_SESSION['token'])) {
 						
 						if (count($sites['results']) >= 50) {
 							echo '<div class="text-center">';
-							echo '<a class="btn btn-default load-more-link load-more-sites" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more sites</a>';
+							echo '<a class="btn btn-default load-more-link load-more-sites" data-org="' . $org['id'] . '" data-offset="' . count($sites['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more sites</a>';
 							echo '</div>';
 						}
 					}
@@ -623,7 +623,7 @@ if (isset($_SESSION['token'])) {
 				<?php
 				if (count($sites['results']) >= 50) {
 					echo '<div class="text-center">';
-					echo '<a class="btn btn-default load-more-link load-more-sites" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more sites</a>';
+					echo '<a class="btn btn-default load-more-link load-more-sites" data-org="' . $org['id'] . '" data-offset="' . count($sites['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more sites</a>';
 					echo '</div>';
 				}
 				}

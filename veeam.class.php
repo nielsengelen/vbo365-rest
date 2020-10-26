@@ -2072,9 +2072,9 @@ class VBO {
    * @param $rid Restore Session ID
    * @return $result 
    */
-  public function getSharePointSites($rid, $offset = 0) {
+  public function getSharePointSites($rid, $offset = 0, $limit = 50) {
     try {
-        $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Sites?offset='.$offset.'&parentId=null', [
+        $response = $this->client->request('GET', 'RestoreSessions/'.$rid.'/Organization/Sites?offset='.$offset.'&limit='.$limit.'&parentId=null', [
 						'headers' => [
 							'Authorization' => 'Bearer ' . $this->token,
 							'Accept'        => 'application/json',
