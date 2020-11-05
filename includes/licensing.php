@@ -27,7 +27,7 @@ if (isset($_SESSION['token'])) {
         <?php
         for ($i = 0; $i < count($org); $i++) {
             $license = $veeam->getLicenseInfo($org[$i]['id']);
-			$users = $veeam->getLicensedUsers($org[$i]['id']);
+			$users = $veeam->getLicensedUsers($org[$i]['id'], $license['licensedUsers']);
 			$repo = $veeam->getOrganizationRepository($org[$i]['id']);
 			$usersarray = array();
 
