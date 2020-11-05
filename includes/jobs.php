@@ -173,10 +173,9 @@ if (isset($_SESSION['token'])) {
 </div>
 
 <script>
-/* Job filter */
 $('#filter-jobs').keyup(function(e) {
     var searchText = $(this).val().toLowerCase();
-    /* Show only matching row, hide rest of them */
+    
     $.each($('#table-jobs tbody tr'), function(e) {
         if ($(this).text().toLowerCase().indexOf(searchText) === -1) {
            $(this).hide();
@@ -186,7 +185,6 @@ $('#filter-jobs').keyup(function(e) {
     });
 });
 
-/* Session window */
 $('.item').click(function(e) {
     var icon, text;
     var id = $(this).data('sessionid');
@@ -197,13 +195,13 @@ $('.item').click(function(e) {
         $('#table-session-content tbody').empty();
         
         for (var i = 0; i < response.results.length; i++) {
-            if (response.results[i].title.match(/Success/g)) { /* Success icon */
+            if (response.results[i].title.match(/Success/g)) {
                 icon = 'check-circle';
                 text = 'success';
-            } else if (response.results[i].title.match(/Warning/g)) { /* Warning icon */
+            } else if (response.results[i].title.match(/Warning/g)) {
                 icon = 'exclamation-triangle';
                 text = 'warning';
-            } else { /* Failed icon */
+            } else {
                 icon = 'times-circle';
                 text = 'danger';
             }
@@ -222,11 +220,10 @@ $('.item').click(function(e) {
     });
 });
 
-/* Job Buttons */
 $('.btn-change-job-state').click(function(e) {
-    var jid = $(this).data('jid'); /* Job ID */
-    var name = $(this).data('name'); /* Job name */
-    var call = $(this).data('call'); /* Job call: enable or disable */
+    var jid = $(this).data('jid');
+    var name = $(this).data('name');
+    var call = $(this).data('call');
     var json = '{ "'+call+'": null }';
 
     $.post('veeam.php', {'action' : 'changejobstate', 'id' : jid, 'json' : json}).done(function(data) {
@@ -243,14 +240,22 @@ $('.btn-change-job-state').click(function(e) {
 });
 
 $('.btn-job-start').click(function(e) {
-    var id = $(this).data('jid'); /* Job ID */
-    var name = $(this).data('name'); /* Job name */
+    var id = $(this).data('jid');
+    var name = $(this).data('name');
     
     $.post('veeam.php', {'action' : 'startjob', 'id' : id}).done(function(data) {
+		var response = JSON.parse(data);
+
+		if (response == null) {
+			var message = 'Job has been started';
+		} else {
+			var message = response['message'].slice(0, -1);
+		}
+		
 		Swal.fire({
-			type: 'info',
+			icon: 'info',
 			title: 'Job status',
-			text: '' + data
+			text: '' + message
 		})
     });
 });
@@ -268,9 +273,9 @@ $('.btn-job-start').click(function(e) {
 		?>
 		<script>
 		Swal.fire({
-			type: 'info',
+			icon: 'info',
 			title: 'Session expired',
-			text: 'Your session has expired and requires you to login again.'
+			text: 'Your session has expired and requires you to login again',
 		}).then(function(e) {
 			window.location.href = '/index.php';
 		});

@@ -98,9 +98,9 @@ if (isset($_SESSION['token'])) {
 		?>
 		<script>
 		Swal.fire({
-			type: 'info',
+			icon: 'info',
 			title: 'Session expired',
-			text: 'Your session has expired and requires you to login again.'
+			text: 'Your session has expired and requires you to login again',
 		}).then(function(e) {
 			window.location.href = '/index.php';
 		});

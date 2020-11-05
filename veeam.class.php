@@ -380,9 +380,9 @@ class VBO {
    * @param $id Organization ID
    * @return $result 
    */
-  public function getLicensedUsers($id) {
+  public function getLicensedUsers($id, $limit = 50) {
     try {
-        $response = $this->client->request('GET', 'LicensedUsers?organizationId='.$id, [
+        $response = $this->client->request('GET', 'LicensedUsers?organizationId='.$id.'&limit='.$limit, [
 						'headers' => [
 							'Authorization' => 'Bearer ' . $this->token,
 							'Accept'        => 'application/json',
