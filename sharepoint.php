@@ -695,6 +695,13 @@ $('.btn-start-restore').click(function(e) {
     var json = '{ "explore": { "datetime": "' + pit + '", "type": "vesp", "ShowAllVersions": "true", "ShowDeleted": "true" } }';
 
     $(':button').prop('disabled', true);
+	
+	Swal.fire({
+		icon: 'info',
+		title: 'Restore is starting',
+		text: 'Just a moment while the restore session is starting...',
+		allowOutsideClick: false,
+	})
 
     $.post('veeam.php', {'action' : 'startrestore', 'json' : json, 'id' : oid}).done(function(data) {
         console.log(data);

@@ -599,6 +599,13 @@ $('.btn-start-restore').click(function(e) {
     var json = '{ "explore": { "datetime": "' + pit + '", "type": "veod", "ShowAllVersions": "true", "ShowDeleted": "true" } }';
 
     $(':button').prop('disabled', true);
+	
+	Swal.fire({
+		icon: 'info',
+		title: 'Restore is starting',
+		text: 'Just a moment while the restore session is starting...',
+		allowOutsideClick: false,
+	})
 
     $.post('veeam.php', {'action' : 'startrestore', 'json' : json, 'id' : oid}).done(function(data) {
         if (data.match(/([a-zA-Z0-9]{8})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{12})/g)) {
