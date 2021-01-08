@@ -317,7 +317,7 @@ if (isset($_SESSION['token'])) {
 					$parentfolders = array();
 					
 					for ($i = 0; $i < count($folders['results']); $i++) {
-						if (empty($folders['results'][$i][_links][parent])) {
+						if (empty($folders['results'][$i]['_links']['parent'])) {
 							array_push($parentfolders, array('name' => $folders['results'][$i]['name'], 'id' => $folders['results'][$i]['id'], 'type' => $folders['results'][$i]['type']));
 						}
 					}
