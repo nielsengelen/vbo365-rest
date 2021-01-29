@@ -3,9 +3,11 @@ require_once('../config.php');
 require_once('../veeam.class.php');
 
 session_start();
+error_reporting(E_ALL || E_STRICT);
+
+$veeam = new VBO($host, $port, $version);
 
 if (isset($_SESSION['token'])) {
-	$veeam = new VBO($host, $port, $version);
 	$veeam->setToken($_SESSION['token']);
     $user = $_SESSION['user'];
 	$sessions = $veeam->getSessions();
@@ -15,7 +17,7 @@ if (isset($_SESSION['token'])) {
 		array_push($time, array('name'=> $sessions['results'][$i]['name'], 'organization' => $sessions['results'][$i]['organization'], 'result' => $sessions['results'][$i]['result'], 'creationTime' => $sessions['results'][$i]['creationTime'], 'endTime' => $sessions['results'][$i]['endTime'], 'id' => $sessions['results'][$i]['id']));
 	}
 
-	usort($time, function($a, $b) { /* Sort the default list by start time (last one first) */
+	usort($time, function($a, $b) {
 		$ad = new DateTime($a['creationTime']);
 		$bd = new DateTime($b['creationTime']);
 	  
@@ -26,11 +28,11 @@ if (isset($_SESSION['token'])) {
 	});
 ?>
 <div class="main-container">
-    <h1>Activity log</h1>
+    <h1>History</h1>
     <?php
-    if (count($sessions['results']) != '0') {
+    if (count($sessions['results']) !== 0) {
     ?>
-	<input class="form-control search" id="filter-activity" placeholder="Filter activity..." />
+	<input class="form-control search" id="filter-history" placeholder="Filter history..." />
     <table class="table table-hover table-bordered table-striped table-border" id="table-sessions">
         <thead>
             <tr>
@@ -60,7 +62,7 @@ if (isset($_SESSION['token'])) {
                 </td>
                 <td><?php echo date('d/m/Y H:i', strtotime($value['creationTime'])); ?></td>
                 <td><?php echo date('d/m/Y H:i', strtotime($value['endTime'])); ?></td>
-                <td class="text-center"><a href="#" class="item" data-sessionid="<?php echo $value['id']; ?>" onClick="return false;">View</a></td>
+                <td class="text-center"><a href="#" class="item" data-sessionid="<?php echo $value['id']; ?>" onclick="return false;">View</a></td>
                 </tr>
             <?php
             }
@@ -72,8 +74,7 @@ if (isset($_SESSION['token'])) {
     echo '<p>No restore sessions found.</p>';
 }
 
-/* If we have 30 items from the first request, show message to load additional items */
-if (count($sessions['results']) == '30') {
+if (count($sessions['results']) >= $limit) {
 ?>
 <div class="text-center">
     <a class="btn btn-default load-more-link" data-offset="<?php echo count($sessions['results'])+1; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#"  onClick="return false;">Load more items</a>
@@ -109,10 +110,8 @@ if (count($sessions['results']) == '30') {
 </div>
 
 <script>
-/* Filter activity */
-$('#filter-activity').keyup(function(e) {
+$('#filter-history').keyup(function(e) {
     var searchText = $(this).val().toLowerCase();
-    /* Show only matching row, hide rest of them */
     $.each($('#table-sessions tbody tr'), function(e) {
         if ($(this).text().toLowerCase().indexOf(searchText) === -1) {
            $(this).hide();
@@ -122,7 +121,6 @@ $('#filter-activity').keyup(function(e) {
     });
 });
 
-/* Session window */
 $('.item').click(function(e) {
     var icon, text;
     var id = $(this).data('sessionid');
@@ -133,13 +131,13 @@ $('.item').click(function(e) {
         $('#table-session-content tbody').empty();
         
         for (var i = 0; i < response.results.length; i++) {
-            if (response.results[i].status == 'Success') { /* Success icon */
+            if (response.results[i].status == 'Success') {
                 icon = 'check-circle';
                 text = 'success';
-            } else if (response.results[i].status == 'Warning') { /* Warning icon */
+            } else if (response.results[i].status == 'Warning') {
                 icon = 'exclamation-triangle';
                 text = 'warning';
-            } else { /* Failed icon */
+            } else {
                 icon = 'times-circle';
                 text = 'danger';
             }
@@ -154,19 +152,15 @@ $('.item').click(function(e) {
     });
 });
 
-/* Load more link */
 $('.load-more-link').click(function(e) {
     var offset = $(this).data('offset');
-
     loadSessions(offset);
 });
 
-/*
- * @param offset Offset
- */
 function loadSessions(offset) {
     var result, status;
-
+	var limit = <?php echo $limit; ?>;
+	
     $.post('veeam.php', {'action' : 'getsessions', 'offset' : offset}).done(function(data) {
         var response = JSON.parse(data);
 
@@ -179,10 +173,10 @@ function loadSessions(offset) {
                 status = '<span class="label label-' + result.toLowerCase() + '">' + result + '</span>';
             }
 			
-			if (response.results.length < 30) {
+			if (response.results.length < limit) {
 				$('a.load-more-link').addClass('hide');
 			} else {
-				$('a.load-more-link').data('offset', offset + 30); /* Update offset for loading more items */
+				$('a.load-more-link').data('offset', offset + limit);
 			}
             
             $('#table-sessions tbody').append('<tr> \
@@ -205,16 +199,15 @@ function loadSessions(offset) {
 		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
         $_SESSION['token'] = $veeam->getToken();
 	} else {
-		unset($_SESSION);
-		session_destroy();
+		$veeam->logout();
 		?>
 		<script>
 		Swal.fire({
 			icon: 'info',
 			title: 'Session expired',
-			text: 'Your session has expired and requires you to login again',
+			text: 'Your session has expired and requires you to log in again',
 		}).then(function(e) {
-			window.location.href = '/index.php';
+			window.location.href = '/';
 		});
 		</script>
 		<?php

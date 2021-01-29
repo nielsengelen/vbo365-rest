@@ -1,18 +1,21 @@
 <?php
+if (!session_id()) {
+	session_start();
+	session_regenerate_id(true);
+}
+
 error_reporting(E_ALL || E_STRICT);
 set_time_limit(0);
 
 require_once('config.php');
 require_once('veeam.class.php');
 
-session_start();
-
 if (empty($host) || empty($port) || empty($version)) {
-    exit('Please modify the configuration file first and configure the Veeam Backup for Microsoft Office 365 host, port and RESTful API version settings.');
+    exit('Modify the configuration file first and configure the Veeam Backup for Microsoft Office 365 host, port and RESTful API version settings.');
 }
 
-if (!preg_match('/v[3-5]/', $version)) {
-	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 3, 4 and 5 are supported.');
+if (!preg_match('/v[4-5]/', $version)) {
+	exit('Invalid API version found. Modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 4 and 5 are supported.');
 }
 
 if (isset($_POST['logout'])) {
@@ -30,8 +33,6 @@ if (isset($_POST['logout'])) {
 		$veeam = new VBO($host, $port, $version);
 		$login = $veeam->login($user, $pass);
 		
-		session_regenerate_id();
-		
         $_SESSION['refreshtoken'] = $veeam->getRefreshToken();
         $_SESSION['token'] = $veeam->getToken();
 		$_SESSION['authtype'] = $authtype;
@@ -39,8 +40,6 @@ if (isset($_POST['logout'])) {
     } else if (isset($tenantid) && isset($assertion)) {
 		$veeam = new VBO($host, $port, $version);
 		$login = $veeam->MFALogin($tenantid, $assertion);
-		
-		session_regenerate_id();
 		
         $_SESSION['refreshtoken'] = $veeam->getRefreshToken();
         $_SESSION['token'] = $veeam->getToken();
@@ -83,10 +82,10 @@ if (file_exists('setup.php')) {
 	<script>
 	Swal.fire({
 		icon: 'error',
-		title: 'Setup file detected',
+		title: 'Error',
 		allowOutsideClick: false,
 		showConfirmButton: false,
-		text: 'Setup file is still available within the installation folder. You must remove this file in order to continue.'
+		text: 'Setup file is still available within the installation folder. You must remove this file in order to continue'
 	});
 	</script>
 	<?php
@@ -111,42 +110,298 @@ if (isset($_SESSION['token'])) {
 	if (isset($user) && strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
 	?>
 	<nav class="navbar navbar-inverse navbar-static-top">
-		<ul class="nav navbar-header">
-		  <li><a class="navbar-brand navbar-logo" href="/"><img src="images/logo.svg" alt="Veeam Backup for Microsoft Office 365" class="logo"></a></li>
-		</ul>
-		<ul class="nav navbar-nav" id="nav">
-		  <li><a href="exchange">Exchange</a></li>
-		  <li><a href="onedrive">OneDrive</a></li>
-		  <li><a href="sharepoint">SharePoint</a></li>
-		</ul>
-		<ul class="nav navbar-nav navbar-right">
-		  <li><a href="#" onClick="return false;"><span class="fa fa-user"></span> Welcome <i><?php echo $user; ?></i> !</a></li>
-		  <li id="logout"><a href="#" onClick="return false;"><span class="fa fa-sign-out-alt"></span> Logout</a></li>
-		</ul>
+		<div class="container-fluid">
+			<ul class="nav navbar-header">
+			  <li><a class="navbar-brand navbar-logo" href="/"><img src="images/logo.svg" alt="Veeam Backup for Microsoft Office 365" class="logo"></a></li>
+			</ul>
+			<ul class="nav navbar-nav" id="nav">
+			  <?php
+			  if (!isset($_SESSION['rtype'])) {
+			  ?>
+			  <li><a href="exchange">Exchange</a></li>
+			  <li><a href="onedrive">OneDrive</a></li>
+			  <li><a href="sharepoint">SharePoint</a></li>
+			  <?php
+			  if ($version === 'v5') {
+				echo '<li><a href="teams">Teams</a></li>';
+			  }
+			  ?>
+			  <?php
+			  } else {
+				$rtype = $_SESSION['rtype'];
+				
+				if ($rtype == 'vex') {
+					echo '<li><a href="exchange">Exchange</a></li>';
+				} else if ($rtype == 'veo') {
+					echo '<li><a href="onedrive">OneDrive</a></li>';
+				} else if ($rtype == 'vesp') {
+					echo '<li><a href="sharepoint">SharePoint</a></li>';
+				} else {
+					echo '<li><a href="teams">Teams</a></li>';
+				}
+			  }
+			  ?>
+			</ul>
+			<ul class="nav navbar-nav navbar-right">
+			  <li><a href="#" onClick="return false;"><span class="fa fa-user"></span> Welcome <i><?php echo $user; ?></i> !</a></li>
+			  <li id="logout"><a href="#" onClick="return false;"><span class="fa fa-sign-out-alt"></span> Logout</a></li>
+			</ul>
+		</div>
 	</nav>
 	<div class="container-fluid">
-		<aside id="sidebar">
+		<div id="sidebar">
 			<div class="logo-container"><i class="logo fa fa-cogs"></i></div>
 			<div class="separator"></div>
-			<menu class="menu-segment">
-			<ul class="menu">
-				<li id="dashboard" data-call="dashboard"><i class="fa fa-tachometer-alt"></i> Dashboard</li>
-				<li id="jobs" data-call="jobs"><i class="fa fa-calendar"></i> Jobs</li>
-				<li id="organizations" data-call="organizations"><i class="fa fa-building"></i> Organizations</li>
-				<li id="proxies" data-call="proxies"><i class="fa fa-server"></i> Proxies</li>
-				<li id="repositories" data-call="repositories"><i class="fa fa-database"></i> Repositories</li>
-				<li id="licensing" data-call="licensing"><i class="fa fa-file-alt"></i> Licensing</li>
-				<li id="activity" data-call="activity"><i class="fa fa-tasks"></i> Activity</li>
-			</ul>
+			<menu class="menu-segment" id="menu">
+				<ul class="menu">
+					<li class="active"><a href="/"><i class="fa fa-tachometer-alt"></i> Dashboard</a></li>
+					<li id="organizations"><a href="#" onclick="loadPage('organizations');"><i class="fa fa-building"></i> Organizations</a></li>
+					<li id="jobs"><a href="#" onclick="loadPage('jobs');"><i class="fa fa-calendar"></i> Jobs</a></li>
+					<li id="proxies"><a href="#" onclick="loadPage('proxies');"><i class="fa fa-server"></i> Proxies</a></li>
+					<li id="repositories"><a href="#" onclick="loadPage('repositories');"><i class="fa fa-database"></i> Repositories</a></li>
+					<li id="licensing"><a href="#" onclick="loadPage('licensing');"><i class="fa fa-file-alt"></i> Licensing</a></li>
+					<li id="history"><a href="#" onclick="loadPage('history');"><i class="fa fa-history"></i> History</a></li>
+				</ul>
 			</menu>
 			<div class="separator"></div>
 			<div class="bottom-padding"></div>
-		</aside>
-		<main id="main">
-		<?php 
-		include_once('includes/dashboard.php');
-		?>
-		</main>
+		</div>
+		<div id="main">
+			<?php
+			$licensetotal = 0;
+			$newlicensetotal = 0;
+			$org = $veeam->getOrganizations();
+			$jobs = $veeam->getJobs();
+			$proxies = $veeam->getProxies();
+			$repos = $veeam->getBackupRepositories();
+			$sessions = $veeam->getSessions();
+
+			try {
+				$objectrepos = $veeam->getObjectStorageRepositories();
+			} catch (Exception $e) {
+				$e->getMessage();
+			}
+			
+			for ($i = 0; $i < count($org); $i++) {
+			  $license = $veeam->getLicenseInfo($org[$i]['id']);
+			  $licensetotal += $license['licensedUsers'];
+			  $newlicensetotal += $license['newUsers'];
+			}
+			?>
+			<div class="main-container">
+				<h1>Infrastructure Dashboard</h1>
+				<div class="row panel-row">
+					<div class="col-lg-4 col-md-4">
+					  <div class="panel panel-primary">
+						<div class="panel-heading">
+						  <div class="row">
+							<div class="col-xs-4">
+							  <i class="fa fa-building fa-4x"></i>
+							</div>
+							<div class="col-xs-8 text-left">
+							  <div class="medium">&nbsp;<?php echo count($org); ?> organizations</div>
+							</div>
+						  </div>
+						</div>
+						<a href="#" class="dash" data-call="organizations" onClick="loadPage('organizations');">
+						<div class="panel-footer">
+						  <span class="pull-left">Overview</span>
+						  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+						  <div class="clearfix"></div>
+						</div>
+						</a>
+					  </div>
+					</div>
+					<div class="col-lg-4 col-md-4">
+					  <div class="panel panel-green">
+						<div class="panel-heading">
+						  <div class="row">
+							<div class="col-xs-4">
+							  <i class="fa fa-calendar fa-4x"></i>
+							</div>
+							<div class="col-xs-8 text-left">
+							  <div class="medium">&nbsp;<?php echo count($jobs); ?> backup jobs</div>
+							</div>
+						  </div>
+						</div>
+						<a href="#" class="dash" data-call="jobs" onClick="loadPage('jobs');">
+						<div class="panel-footer">
+						  <span class="pull-left">Overview</span>
+						  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+						  <div class="clearfix"></div>
+						</div>
+						</a>
+					  </div>
+					</div>
+					<div class="col-lg-4 col-md-4">
+					  <div class="panel panel-yellow">
+						<div class="panel-heading">
+						  <div class="row">
+							<div class="col-xs-4">
+							  <i class="fa fa-server fa-4x"></i>
+							</div>
+							<div class="col-xs-8 text-left">
+							  <div class="medium">&nbsp;<?php echo count($proxies); ?> proxies</div>
+							</div>
+						  </div>
+						</div>
+						<a href="#" class="dash" data-call="proxies" onClick="loadPage('proxies');">
+						<div class="panel-footer">
+						  <span class="pull-left">Overview</span>
+						  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+						  <div class="clearfix"></div>
+						</div>
+						</a>
+					  </div>
+					</div>
+				</div>
+				<div class="row panel-row">
+					<div class="col-lg-4 col-md-4">
+					  <div class="panel panel-lightgreen">
+						<div class="panel-heading">
+						  <div class="row">
+							<div class="col-xs-4">
+							  <i class="fa fa-database fa-4x"></i>
+							</div>
+							<div class="col-xs-8 text-left">
+							  <div class="medium">&nbsp;<?php echo count($repos); ?> repositories</div>
+							</div>
+						  </div>
+						</div>
+						<a href="#" class="dash" data-call="repositories" onClick="loadPage('repositories');">
+						<div class="panel-footer">
+						  <span class="pull-left">Overview</span>
+						  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+						  <div class="clearfix"></div>
+						</div>
+						</a>
+					  </div>
+					</div>
+					<?php
+					if (isset($objectrepos)) {
+					?>
+					<div class="col-lg-4 col-md-4">
+					  <div class="panel panel-orange">
+						<div class="panel-heading">
+						  <div class="row">
+							<div class="col-xs-4">
+							  <i class="fa fa-cloud fa-4x"></i>
+							</div>
+							<div class="col-xs-8 text-left">
+							  <div class="medium">&nbsp;<?php echo count($objectrepos); ?> object storage repositories</div>
+							</div>
+						  </div>
+						</div>
+						<a href="#" class="dash" data-call="repositories" onClick="loadPage('repositories');">
+						<div class="panel-footer">
+						  <span class="pull-left">Overview</span>
+						  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+						  <div class="clearfix"></div>
+						</div>
+						</a>
+					  </div>
+					</div>
+					<?php
+					}
+					?>
+					<div class="col-lg-4 col-md-4">
+					  <div class="panel panel-gray">
+						<div class="panel-heading">
+						  <div class="row">
+							<div class="col-xs-4">
+							  <i class="fa fa-file-alt fa-4x"></i>
+							</div>
+							<div class="col-xs-8 text-left">
+							  <div class="medium">&nbsp;<?php echo $licensetotal; ?> licenses used<br />&nbsp;<?php echo $newlicensetotal; ?> extra licenses</div>
+							</div>
+						  </div>
+						</div>
+						<a href="#" class="dash" data-call="licensing" onClick="loadPage('licensing');">
+						<div class="panel-footer">
+						  <span class="pull-left">Overview</span>
+						  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+						  <div class="clearfix"></div>
+						</div>
+						</a>
+					  </div>
+					</div>
+					<?php
+					if (!isset($objectrepos)) {
+					?>
+					<div class="col-lg-4 col-md-4">
+					  <div class="panel panel-red">
+						<div class="panel-heading">
+						  <div class="row">
+							<div class="col-xs-4">
+							  <i class="fa fa-history fa-4x"></i>
+							</div>
+							<div class="col-xs-8 text-left">
+							  <div class="medium">
+							  <?php 
+							  echo count($sessions['results']);
+							  
+							  if (count($sessions['results']) >= $limit) {
+							  echo '+';
+							  }
+							  ?> 
+							  sessions
+							  </div>
+							</div>
+						  </div>
+						</div>
+						<a href="#" class="dash" data-call="history" onClick="loadPage('history');">
+						<div class="panel-footer">
+						  <span class="pull-left">Overview</span>
+						  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+						  <div class="clearfix"></div>
+						</div>
+						</a>
+					  </div>
+					</div>
+					<?php
+					}
+					?>
+				</div>
+				<?php
+				if (isset($objectrepos)) {
+				?>
+				<div class="row panel-row">
+					<div class="col-lg-4 col-md-4">
+					  <div class="panel panel-red">
+						<div class="panel-heading">
+						  <div class="row">
+							<div class="col-xs-4">
+							  <i class="fa fa-history fa-4x"></i>
+							</div>
+							<div class="col-xs-8 text-left">
+							  <div class="medium">
+							  <?php 
+							  echo count($sessions['results']);
+							  
+							  if (count($sessions['results']) >= $limit) {
+							  echo '+';
+							  }
+							  ?> 
+							  sessions
+							  </div>
+							</div>
+						  </div>
+						</div>
+						<a href="#" class="dash" data-call="history" onClick="loadPage('history');">
+						<div class="panel-footer">
+						  <span class="pull-left">Overview</span>
+						  <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+						  <div class="clearfix"></div>
+						</div>
+						</a>
+					  </div>
+					</div>
+				</div>
+				<?php
+				}
+				?>
+			</div>
+		</div>
 	</div>
 	<script>		
 	$('#logout').click(function(e) {	
@@ -161,7 +416,7 @@ if (isset($_SESSION['token'])) {
 		swalWithBootstrapButtons.fire({
 			icon: 'question',
 			title: 'Logout',
-			text: 'You are about to logout. Are you sure you want to continue?',
+			text: 'You are about to log out. Are you sure you want to continue?',
 			showCancelButton: true,
 			confirmButtonText: 'Logout',
 			cancelButtonText: 'Cancel',
@@ -173,21 +428,22 @@ if (isset($_SESSION['token'])) {
 			}
 		})
 	});
-
-	$('ul.menu li').click(function(e) {
-		var call = $(this).data('call');
-		var id = this.id;
-
-		if (typeof id === undefined || !id) {
-			return;
-		}
 		
-		if (call == 'dashboard') {
-			window.location.replace('index.php');
-		} else {
-			$('#main').load('includes/' + call + '.php');
-		}
+	$('#menu a').click(function(e) {
+		$('#menu').find('li.active').removeClass('active');
+		$(this).parent('li').addClass('active');
 	});
+	
+	$('.dash').click(function(e) {
+		var call = $(this).data('call');
+		
+		$('#menu').find('li.active').removeClass('active');
+		$('#' + call).addClass('active');
+	});
+	
+	function loadPage(call) {
+		$('#main').load('includes/' + call + '.php');
+	}
 	</script>
 	<?php
 	} else {
@@ -195,8 +451,6 @@ if (isset($_SESSION['token'])) {
 	}
 } else {
 	unset($_SESSION);
-	session_regenerate_id();
-    session_destroy();
 	?>
 	<section class="login-block">
 		<div class="container login-container">
@@ -216,7 +470,7 @@ if (isset($_SESSION['token'])) {
 								</div>
 								<div class="divider-line"><span>OR</span></div>
 								<div class="form-check text-center">
-									<button type="button" class="btn btn-link" id="btn_mfa_login">Use MFA login</button>
+									<button type="button" class="btn btn-link btn-link-login" id="btn_mfa_login">Use MFA login</button>
 								</div>
 							</form>
 						</div>
@@ -227,13 +481,14 @@ if (isset($_SESSION['token'])) {
 										<label for="tenant" class="text-uppercase">Tenant ID:</label>
 										<input type="text" class="input-loginform form-control" id="tenantid" name="tenant" placeholder="company.onmicrosoft.com" autofocus><span class="fa fa-user fa-2x icon"></span><br>
 										<label for="application" class="text-uppercase">Application ID:</label>
-										<input type="text" class="input-loginform form-control" id="applicationid" name="application"><span class="fa fa-desktop fa-2x icon"></span><br>
+										<input type="text" class="input-loginform form-control" id="applicationid" name="application"><span class="fa fa-desktop fa-2x icon"></span>
+										<div class="alert alert-info text-left">You can find this number in the application settings of your Microsoft Azure Active Directory, as described in <a href="https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal" target="_blank">this Microsoft article</a>.</div>
 										<div class="form-check text-center">
 											<button type="button" class="btn btn-next form-check text-center">Next</button>
 										</div>
 										<div class="divider-line"><span>OR</span></div>
 										<div class="form-check text-center">
-											<button type="button" class="btn btn-link" id="btn_basic_login">Use basic login</button>
+											<button type="button" class="btn btn-link btn-link-login" id="btn_basic_login">Use basic login</button>
 										</div>
 									</div>
 									<div class="tab-pane fade in" role="tabpanel" id="step2">
@@ -252,7 +507,6 @@ if (isset($_SESSION['token'])) {
 											$('#btn-copy').tooltip('hide');
 										  }, 1000);
 										}
-
 										function setTooltip(message) {
 										  $('#btn-copy').tooltip('hide')
 											.attr('data-original-title', message)
@@ -260,12 +514,11 @@ if (isset($_SESSION['token'])) {
 										}
 										
 										clipboard.on('success', function(e) {
-										  setTooltip('Copied!');
+										  setTooltip('Copied');
 										  hideTooltip();
 										});
-
 										clipboard.on('error', function(e) {
-										  setTooltip('Failed!');
+										  setTooltip('Failed');
 										  hideTooltip();
 										});
 										</script>
@@ -282,9 +535,9 @@ if (isset($_SESSION['token'])) {
 					<?php
 					if (isset($login)) {
 						if ($login == 0) {
-							echo '<br><span class="text-warning" id="login-state">The provided credentials are incorrect.</span>';
+							echo '<br><span class="text-warning" id="login-state">The provided credentials are incorrect</span>';
 						} else if ($login == 1) {
-							echo '<br><span class="text-warning" id="login-state">No credentials are provided.</span>';
+							echo '<br><span class="text-warning" id="login-state">No credentials provided</span>';
 						} else {
 							echo '<br><span class="text-warning" id="login-state">' . $login . '</span>';
 						}
@@ -366,7 +619,7 @@ if (isset($_SESSION['token'])) {
 				clearInterval(callInverval);
 				storeValue('assertion', 'error');
 			} else if (response['error'] === 'invalid_grant') {
-				$('#polling').hide().html('<i class="fas fa-exclamation-circle" style="color:red"></i> Authorization code was already redeemed, please retry with a new valid code.').fadeIn('slow');
+				$('#polling').hide().html('<i class="fas fa-exclamation-circle" style="color:red"></i> Authorization code was already redeemed, retry with a new valid code.').fadeIn('slow');
 				
 				clearInterval(callInverval);
 				storeValue('assertion', 'error');
@@ -377,7 +630,7 @@ if (isset($_SESSION['token'])) {
 				storeValue('assertion', JSON.stringify(response));
 				clearInterval(callInverval);
 			} else {
-				$('#polling').hide().html('Unknown error. Please try again.').fadeIn('slow');
+				$('#polling').hide().html('Unknown error. In order to continue, restart the login procedure.').fadeIn('slow');
 				
 				clearInterval(callInverval);
 				storeValue('assertion', 'error');
@@ -395,9 +648,9 @@ if (isset($_SESSION['token'])) {
 			if (typeof tenantid === undefined || !tenantid) {
 				Swal.fire({
 					icon: 'error',
-					title: 'Tenant ID is missing',
+					title: 'Error',
 					allowOutsideClick: true,
-					text: 'Please provide your Tenant ID and try again.'
+					text: 'Provide your Tenant ID and try again'
 				});
 				
 				return;
@@ -406,9 +659,9 @@ if (isset($_SESSION['token'])) {
 			if (typeof applicationid === undefined || !applicationid) {
 				Swal.fire({
 					icon: 'error',
-					title: 'Application ID is missing',
+					title: 'Error',
 					allowOutsideClick: true,
-					text: 'Please provide your Application ID and try again.'
+					text: 'Provide your Application ID and try again'
 				});
 				
 				return;
@@ -436,7 +689,7 @@ if (isset($_SESSION['token'])) {
 						title: 'Error',
 						allowOutsideClick: true,
 						showConfirmButton: true,
-						text: 'You are not authenticated against Microsoft Office 365. Please follow the required steps and try again.'
+						text: 'You are not authenticated against Microsoft Office 365. Follow the required steps and try again'
 					});
 					
 					return;

@@ -3,9 +3,11 @@ require_once('../config.php');
 require_once('../veeam.class.php');
 
 session_start();
+error_reporting(E_ALL || E_STRICT);
+
+$veeam = new VBO($host, $port, $version);
 
 if (isset($_SESSION['token'])) {
-	$veeam = new VBO($host, $port, $version);
 	$veeam->setToken($_SESSION['token']);	
     $user = $_SESSION['user'];
 	$org = $veeam->getOrganizations();
@@ -13,16 +15,16 @@ if (isset($_SESSION['token'])) {
 <div class="main-container">
     <h1>Organizations</h1>
     <?php
-    if (count($org) != '0') {
+    if (count($org) !== 0) {
     ?>
     <table class="table table-hover table-bordered table-padding table-striped" id="table-organizations">
         <thead>
             <tr>
                 <th>Name</th>
                 <th>Region</th>
-                <th>First backup</th>
-                <th>Last backup</th>
-				<th class="text-center">Licensed users</th>
+                <th>First Backup</th>
+                <th>Last Backup</th>
+				<th class="text-center">Licensed Users</th>
             </tr>
         </thead>
         <tbody> 
@@ -36,7 +38,7 @@ if (isset($_SESSION['token'])) {
                 <td><?php echo (isset($org[$i]['lastBackuptime']) ? date('d/m/Y H:i T', strtotime($org[$i]['lastBackuptime'])) : 'N/A'); ?></td>
 				<td class="pointer text-center" data-toggle="collapse" data-target="#licensedUsers<?php echo $i; ?>"><a href="#" onClick="return false;">View</a></td>
             </tr>
-			<tr><!-- Start of table for licensed users -->
+			<tr>
                 <td colspan="6" class="zeroPadding">
 					<div id="licensedUsers<?php echo $i; ?>" class="accordian-body collapse">
 						<table class="table table-bordered table-small table-striped">
@@ -52,7 +54,7 @@ if (isset($_SESSION['token'])) {
 								<?php
 									$license = $veeam->getLicenseInfo($org[$i]['id']);
 									
-									if ($license['licensedUsers'] != '0') {
+									if ($license['licensedUsers'] !== 0) {
 										$users = $veeam->getLicensedUsers($org[$i]['id']);
 									
 										for ($j = 0; $j < count($users['results']); $j++) {
@@ -93,16 +95,15 @@ if (isset($_SESSION['token'])) {
 		$_SESSION['refreshtoken'] = $veeam->getRefreshToken();
         $_SESSION['token'] = $veeam->getToken();
 	} else {
-		unset($_SESSION);
-		session_destroy();
+		$veeam->logout();
 		?>
 		<script>
 		Swal.fire({
 			icon: 'info',
 			title: 'Session expired',
-			text: 'Your session has expired and requires you to login again',
+			text: 'Your session has expired and requires you to log in again',
 		}).then(function(e) {
-			window.location.href = '/index.php';
+			window.location.href = '/';
 		});
 		</script>
 		<?php

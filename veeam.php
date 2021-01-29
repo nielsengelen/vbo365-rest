@@ -1,9 +1,9 @@
 <?php
 session_start();
+set_time_limit(0);
 
 require_once('config.php');
 require_once('veeam.class.php');
-set_time_limit(0);
 
 if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
 	if (isset($_POST['action'])) { $action = $_POST['action']; }
@@ -12,13 +12,19 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 	if (isset($_POST['offset'])) { $offset = $_POST['offset']; }
 	if (isset($_POST['type'])) { $type = $_POST['type']; }
 
+	if (isset($_POST['rid'])) { $rid = $_POST['rid']; }
+	
 	if (isset($_POST['id'])) { $id = $_POST['id']; }
 	if (isset($_POST['folderid'])) { $folderid = $_POST['folderid']; }
 	if (isset($_POST['itemid'])) { $itemid = $_POST['itemid']; }
 	if (isset($_POST['mailboxid'])) { $mailboxid = $_POST['mailboxid']; }
-	if (isset($_POST['rid'])) { $rid = $_POST['rid']; }
 	if (isset($_POST['siteid'])) { $siteid = $_POST['siteid']; }
 	if (isset($_POST['userid'])) { $userid = $_POST['userid']; }
+	
+	if (isset($_POST['teamid'])) { $teamid = $_POST['teamid']; }
+	if (isset($_POST['channelid'])) { $channelid = $_POST['channelid']; }
+	if (isset($_POST['parentid'])) { $parentid = $_POST['parentid']; }
+	if (isset($_POST['tabid'])) { $tabid = $_POST['tabid']; }
 
 	$veeam = new VBO($host, $port, $version);
 	
@@ -26,7 +32,6 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 		$veeam->setToken($_SESSION['token']);
 	}
 	
-	/* Jobs Calls */
 	if ($action == 'changejobstate') {
 		$veeam->changeJobState($id, $json);
 	}
@@ -43,19 +48,16 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 		echo json_encode($job);
 	}
 
-	/* Organizations Calls */
 	if ($action == 'getorganizations') {
 		$org = $veeam->getOrganizations();
 		echo json_encode($org);
 	}
 
-	/* Repositories Calls */
 	if ($action == 'getrepo') {
 		$repo = $veeam->getBackupRepository($id);
 		echo json_encode($repo);
 	}
 
-	/* Sessions Calls */
 	if ($action == 'getsessionlog') {
 		$log = $veeam->getSessionLog($id);
 		echo json_encode($log);
@@ -81,9 +83,8 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 		echo json_encode($log);
 	}
 
-	/* Restore Session Calls */
 	if ($action == 'startrestore') {
-		if (isset($id) && ($id != 'tenant')) {
+		if (isset($id) && ($id !== 'tenant')) {
 			$session = $veeam->startRestoreSession($json, $id);
 		} else {
 			$session = $veeam->startRestoreSession($json);
@@ -102,9 +103,10 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 			
 			unset($_SESSION['rid']);
 			unset($_SESSION['rtype']);
-		} else {		
-			echo 'success';
-			
+		} else {
+			$session = array('message' => 'success');
+			echo json_encode($session);
+		
 			unset($_SESSION['rid']);
 			unset($_SESSION['rtype']);
 		}
@@ -114,60 +116,91 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 		echo json_encode($code);
 	}
 
-	/* Exchange Calls */
 	if ($action == 'getmailboxes') {
-		$mailboxes = $veeam->getMailboxes($rid, $offset);
-		echo json_encode($mailboxes);
-	}
-	if ($action == 'getmailitems') {
 		if (isset($offset)) {
-			$items = $veeam->getMailboxItems($mailboxid, $rid, $folderid, $offset);
+			$mailboxes = $veeam->getMailboxes($rid, $offset);
 		} else {
-			$items = $veeam->getMailboxItems($mailboxid, $rid, $folderid);
+			$mailboxes = $veeam->getMailboxes($rid);
 		}
 		
-		echo json_encode($items);
+		echo json_encode($mailboxes);
 	}
 	if ($action == 'getmailboxfolders') {
 		if (isset($folderid)) {
-			$folders = $veeam->getMailboxFolders($mailboxid, $rid, $offset, $folderid, $limit);
+			if (isset($offset)) {
+				$folders = $veeam->getMailboxFolders($rid, $mailboxid, $folderid, $offset);
+			} else {
+				$folders = $veeam->getMailboxFolders($rid, $mailboxid, $folderid);
+			}
 		} else {
-			$folders = $veeam->getMailboxFolders($mailboxid, $rid, $offset);
+			if (isset($offset)) {
+				$folders = $veeam->getMailboxFolders($rid, $mailboxid, $fid = 'null', $offset);
+			} else {
+				$folders = $veeam->getMailboxFolders($rid, $mailboxid, $fid = 'null');
+			}
 		}
 		
 		echo json_encode($folders);
 	}
-
-	/* Exchange Restore Calls */
+	if ($action == 'getmailboxitems') {
+		if (isset($offset)) {
+			$items = $veeam->getMailboxItems($rid, $mailboxid, $folderid, $offset);
+		} else {
+			$items = $veeam->getMailboxItems($rid, $mailboxid, $folderid);
+		}
+		
+		echo json_encode($items);
+	}
+	
 	if ($action == 'exportmailbox') {
-		$veeam->exportMailbox($mailboxid, $rid, $json);
+		$export = $veeam->exportMailbox($rid, $mailboxid, $json);
+		echo json_encode($export);
+	}
+	if ($action == 'exportmailfolder') {
+		$export = $veeam->exportMailFolder($rid, $mailboxid, $itemid, $json);
+		echo json_encode($export);
 	}
 	if ($action == 'exportmailitem') {
-		$veeam->exportMailItem($itemid, $mailboxid, $rid, $json);
+		$export = $veeam->exportMailItem($rid, $mailboxid, $itemid, $json);
+		echo json_encode($export);
 	}
 	if ($action == 'exportmultiplemailitems') {
-		$veeam->exportMultipleMailItems($itemid, $mailboxid, $rid, $json);
+		$export = $veeam->exportMultipleMailItems($rid, $mailboxid, $itemid, $json);
+		echo json_encode($export);
 	}
+
 	if ($action == 'restoremailbox') {
-		$restore = $veeam->restoreMailbox($mailboxid, $rid, $json);
+		$restore = $veeam->restoreMailbox($rid, $mailboxid, $json);
+		echo json_encode($restore);
+	}
+	if ($action == 'restoremailfolder') {
+		$restore = $veeam->restoreMailFolder($rid, $mailboxid, $itemid, $json);
 		echo json_encode($restore);
 	}
 	if ($action == 'restoremailitem') {
-		$restore = $veeam->restoreMailItem($itemid, $mailboxid, $rid, $json);
+		$restore = $veeam->restoreMailItem($rid, $mailboxid, $itemid, $json);
 		echo json_encode($restore);
 	}
 	if ($action == 'restoremultiplemailitems') {
-		$restore = $veeam->restoreMultipleMailItems($mailboxid, $rid, $json);
+		$restore = $veeam->restoreMultipleMailItems($rid, $mailboxid, $json);
 		echo json_encode($restore);
 	}
 
-	/* OneDrive Calls */
 	if ($action == 'getonedriveaccounts') {
-		$accounts = $veeam->getOneDrives($rid, $offset);
+		if (isset($offset)) {
+			$accounts = $veeam->getOneDrives($rid, $offset);
+		} else {
+			$accounts = $veeam->getOneDrives($rid);
+		}
 		echo json_encode($accounts);
 	}
 	if ($action == 'getonedrivefolders') {
-		$folders = $veeam->getOneDriveFolders($rid, $userid, $folderid, $offset);
+		if (isset($offset)) {
+			$folders = $veeam->getOneDriveFolders($rid, $userid, $folderid, $offset);
+		} else {
+			$folders = $veeam->getOneDriveFolders($rid, $userid, $folderid);
+		}
+		
 		echo json_encode($folders);
 	}
 	if ($action == 'getonedriveitems') {
@@ -185,30 +218,32 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 		echo json_encode($items);
 	}
 
-	/* OneDrive Restore Calls */
 	if ($action == 'exportonedrive') {
-		$veeam->exportOneDrive($userid, $rid, $json);
+		$export = $veeam->exportOneDrive($rid, $userid, $json);
+		echo json_encode($export);
 	}
 	if ($action == 'exportonedriveitem') {
-		$veeam->exportOneDriveItem($itemid, $userid, $rid, $json, $type);
+		$export = $veeam->exportOneDriveItem($rid, $userid, $itemid, $json, $type);
+		echo json_encode($export);
 	}
 	if ($action == 'exportmultipleonedriveitems') {
-		$veeam->exportMultipleOneDriveItems($itemid, $userid, $rid, $json, $type);
+		$export = $veeam->exportMultipleOneDriveItems($rid, $userid, $itemid, $json, $type);
+		echo json_encode($export);
 	}
+
 	if ($action == 'restoreonedrive') {
-		$restore = $veeam->restoreOneDrive($userid, $rid, $json);
+		$restore = $veeam->restoreOneDrive($rid, $userid, $json);
 		echo json_encode($restore);
 	}
 	if ($action == 'restoreonedriveitem') {
-		$restore = $veeam->restoreOneDriveItem($itemid, $userid, $rid, $json, $type);
+		$restore = $veeam->restoreOneDriveItem($rid, $userid, $itemid, $json, $type);
 		echo json_encode($restore);
 	}
 	if ($action == 'restoremultipleonedriveitems') {
-		$restore = $veeam->restoreMultipleOneDriveItems($userid, $rid, $json);
+		$restore = $veeam->restoreMultipleOneDriveItems($rid, $userid, $json);
 		echo json_encode($restore);
 	}
 
-	/* SharePoint Calls */
 	if ($action == 'getsharepointitems') {
 		if (isset($offset)) {
 			$items = $veeam->getSharePointItems($rid, $siteid, $folderid, $type, $offset);
@@ -219,38 +254,137 @@ if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQ
 		echo json_encode($items);
 	}
 	if ($action == 'getsharepointfolders') {
-		$folders = $veeam->getSharePointFolders($rid, $siteid, $folderid, $offset);
+		if (isset($offset)) {
+			$folders = $veeam->getSharePointFolders($rid, $siteid, $folderid, $offset);
+		} else {
+			$folders = $veeam->getSharePointFolders($rid, $siteid, $folderid);
+		}
+		
 		echo json_encode($folders);
 	}
 	if ($action == 'getsharepointcontent') {
-		$content = $veeam->getSharePointContent($rid, $siteid, $type, $offset);
+		if (isset($offset)) {
+			$content = $veeam->getSharePointContent($rid, $siteid, $type, $offset);
+		} else {
+			$content = $veeam->getSharePointContent($rid, $siteid, $type);
+		}
+		
 		echo json_encode($content);
 	}
 	if ($action == 'getsharepointsites') {
-		$sites = $veeam->getSharePointSites($rid, $offset);
+		if (isset($offset)) {
+			$sites = $veeam->getSharePointSites($rid, $offset);
+		} else {
+			$sites = $veeam->getSharePointSites($rid, $offset);
+		}
+		
 		echo json_encode($sites);
 	}
 
-	/* SharePoint Restore Calls */
 	if ($action == 'exportsharepoint') {
-		$veeam->exportSharePoint($siteid, $rid, $json);
+		$export = $veeam->exportSharePoint($rid, $siteid, $json);
+		echo json_encode($export);
 	}
 	if ($action == 'exportsharepointitem') {
-		$veeam->exportSharePointItem($itemid, $siteid, $rid, $json, $type);
+		$export = $veeam->exportSharePointItem($rid, $siteid, $itemid, $json, $type);
+		echo json_encode($export);
 	}
 	if ($action == 'exportmultiplesharepointitems') {
-		$veeam->exportMultipleSharePointItems($itemid, $siteid, $rid, $json, $type);
+		$export = $veeam->exportMultipleSharePointItems($rid, $siteid, $itemid, $json, $type);
+		echo json_encode($export);
 	}
+
 	if ($action == 'restoresharepoint') {
-		$restore = $veeam->restoreSharePoint($siteid, $rid, $json);
+		$restore = $veeam->restoreSharePoint($rid, $siteid, $json);
 		echo json_encode($restore);
 	}
 	if ($action == 'restoresharepointitem') {
-		$restore = $veeam->restoreSharePointItem($itemid, $siteid, $rid, $json, $type);
+		$restore = $veeam->restoreSharePointItem($rid, $siteid, $itemid, $json, $type);
 		echo json_encode($restore);
 	}
 	if ($action == 'restoremultiplesharepointitems') {
-		$restore = $veeam->restoreMultipleSharePointItems($siteid, $rid, $json);
+		$restore = $veeam->restoreMultipleSharePointItems($rid, $siteid, $json);
+		echo json_encode($restore);
+	}
+
+	if ($action == 'getteamsfiles') {
+		if (isset($offset)) {
+			$files = $veeam->getTeamsFiles($rid, $teamid, $channelid, $parentid, $offset);
+		} else {
+			$files = $veeam->getTeamsFiles($rid, $teamid, $channelid, $parentid);
+		}
+	
+		echo json_encode($files);
+	}
+	if ($action == 'getteamsposts') {
+		if (isset($offset)) {
+			$posts = $veeam->getTeamsPosts($rid, $teamid, $channelid, $parentid, $offset);
+		} else {
+			$posts = $veeam->getTeamsPosts($rid, $teamid, $channelid, $parentid);
+		}
+	
+		echo json_encode($posts);
+	}
+	if ($action == 'getteamstabs') {
+		if (isset($offset)) {
+			$tabs = $veeam->getTeamsTabs($rid, $teamid, $channelid, $offset);
+		} else {
+			$tabs = $veeam->getTeamsTabs($rid, $teamid, $channelid);
+		}
+	
+		echo json_encode($tabs);
+	}
+
+	if ($action == 'restoreteam') {
+		$restore = $veeam->restoreTeam($rid, $teamid, $json);
+		echo json_encode($restore);
+	}
+	if ($action == 'restoreteamschannel') {
+		$restore = $veeam->restoreTeamsChannel($rid, $teamid, $channelid, $json);
+		echo json_encode($restore);
+	}
+	
+	if ($action == 'exportteamsfile') {
+		$export = $veeam->exportTeamsFile($rid, $teamid, $itemid, $json);
+		echo json_encode($export);
+	}
+	if ($action == 'exportteamsmultiplefiles') {
+		$export = $veeam->exportTeamsMultipleFiles($rid, $teamid, $itemid, $json);
+		echo json_encode($export);
+	}
+	if ($action == 'exportteamschannelfiles') {
+		$export = $veeam->exportTeamsChannelFiles($rid, $teamid, $json);
+		echo json_encode($export);
+	}
+
+	if ($action == 'restoreteamsfile') {
+		$restore = $veeam->restoreTeamsFile($rid, $teamid, $itemid, $json);
+		echo json_encode($restore);
+	}
+	if ($action == 'restoreteamsmultiplefiles') {
+		$restore = $veeam->restoreTeamsMultipleFiles($rid, $teamid, $json);
+		echo json_encode($restore);
+	}
+
+	if ($action == 'exportteamspost') {
+		$export = $veeam->exportTeamsPost($rid, $teamid, $itemid, $json);
+		echo json_encode($export);
+	}
+	if ($action == 'exportteamsmultipleposts') {
+		$export = $veeam->exportTeamsMultiplePosts($rid, $teamid, $itemid, $json);
+		echo json_encode($export);
+	}
+	if ($action == 'restoreteamsmultipleposts') {
+		$restore = $veeam->restoreTeamsMultiplePosts($rid, $teamid, $json);
+		echo json_encode($restore);
+	}
+
+	if ($action == 'restoreteamstab') {
+		$restore = $veeam->restoreTeamsTab($rid, $teamid, $channelid, $tabid, $json);
+		echo json_encode($restore);
+	}
+	if ($action == 'restoreteamsmultipletabs') {
+		$restore = $veeam->restoreTeamsMultipleTabs($rid, $teamid, $channelid, $json);
 		echo json_encode($restore);
 	}
 } else {

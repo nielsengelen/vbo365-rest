@@ -1,17 +1,17 @@
 <?php
+session_start();
 error_reporting(E_ALL || E_STRICT);
 set_time_limit(0);
-session_start();
 
 require_once('config.php');
 require_once('veeam.class.php');
 
 if (empty($host) || empty($port) || empty($version)) {
-    exit('Please modify the configuration file first and configure the Veeam Backup for Microsoft Office 365 host, port and RESTful API version settings.');
+    exit('Modify the configuration file first and configure the Veeam Backup for Microsoft Office 365 host, port and RESTful API version settings.');
 }
 
-if (!preg_match('/v[3-5]/', $version)) {
-	exit('Invalid API version found. Please modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 3, 4 and 5 are supported.');
+if (!preg_match('/v[4-5]/', $version)) {
+	exit('Invalid API version found. Modify the configuration file and configure the Veeam Backup for Microsoft Office 365 RESTful API version setting. Only version 4 and 5 are supported.');
 }
 ?>
 <!DOCTYPE html>
@@ -28,7 +28,8 @@ if (!preg_match('/v[3-5]/', $version)) {
     <link rel="stylesheet" type="text/css" href="css/style.css" />
 	<link rel="stylesheet" type="text/css" href="css/sweetalert2.min.css" />
 	<link rel="stylesheet" type="text/css" href="css/jstree.min.css" />
-    <script src="js/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/exchange.css" />
+	<script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
 	<script src="js/clipboard.min.js"></script>
     <script src="js/fontawesome.min.js"></script>
@@ -40,6 +41,21 @@ if (!preg_match('/v[3-5]/', $version)) {
 </head>
 <body>
 <?php
+if (file_exists('setup.php')) {
+	?>
+	<script>
+	Swal.fire({
+		icon: 'error',
+		title: 'Error',
+		allowOutsideClick: false,
+		showConfirmButton: false,
+		text: 'Setup file is still available within the installation folder. You must remove this file in order to continue'
+	});
+	</script>
+	<?php
+	die();
+}
+
 if (isset($_SESSION['token'])) {
 	$veeam = new VBO($host, $port, $version);
     $veeam->setToken($_SESSION['token']);
@@ -50,13 +66,11 @@ if (isset($_SESSION['token'])) {
 		empty($user);
 	}
 	
-	if (isset($_SESSION['authtype'])) {
-		$authtype = $_SESSION['authtype'];
-	}
-	
-	if (isset($_SESSION['applicationid'])) {
-		$applicationid = $_SESSION['applicationid'];
-	}
+	if (isset($_SESSION['authtype'])) $authtype = $_SESSION['authtype'];
+	if (isset($_SESSION['applicationid'])) $applicationid = $_SESSION['applicationid'];
+	if (!isset($limit)) $limit = 250;
+		
+	$check = filter_var($user, FILTER_VALIDATE_EMAIL);
 ?>
 <nav class="navbar navbar-inverse navbar-static-top">
 	<ul class="nav navbar-header">
@@ -64,8 +78,17 @@ if (isset($_SESSION['token'])) {
 	</ul>
 	<ul class="nav navbar-nav" id="nav">
 	  <li class="active"><a href="exchange">Exchange</a></li>
+	  <?php
+	  if (!isset($_SESSION['rtype'])) {
+	  ?>
 	  <li><a href="onedrive">OneDrive</a></li>
 	  <li><a href="sharepoint">SharePoint</a></li>
+	  <?php
+		if ($version === 'v5') {
+			echo '<li><a href="teams">Teams</a></li>';
+		}
+	  }
+	  ?>
 	</ul>
 	<ul class="nav navbar-nav navbar-right">
 	  <li><a href="#"><span class="fa fa-user"></span> Welcome <i><?php echo $user; ?></i> !</a></li>
@@ -73,20 +96,18 @@ if (isset($_SESSION['token'])) {
 	</ul>
 </nav>
 <div class="container-fluid">
-	<link rel="stylesheet" type="text/css" href="css/exchange.css" />
-	<aside id="sidebar">
+	<div id="sidebar">
 		<div class="logo-container"><i class="logo fa fa-envelope"></i></div>
 		<div class="separator"></div>
 		<menu class="menu-segment" id="menu">
 		<?php
-		if (!isset($_SESSION['rid'])) { /* No restore session is running */
-			$check = filter_var($user, FILTER_VALIDATE_EMAIL);
-
+		if (!isset($_SESSION['rid'])) {
 			echo '<ul id="ul-exchange-users">';
 			
-			if (strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
+			if (strtolower($authtype) !== 'mfa' && $check === false && strtolower($administrator) === 'yes') {
+				if (isset($_GET['oid'])) $oid = $_GET['oid'];
+				
 				$org = $veeam->getOrganizations();				
-				$oid = $_GET['oid'];
 				$menu = false;
 				
 				for ($i = 0; $i < count($org); $i++) {
@@ -105,121 +126,101 @@ if (isset($_SESSION['token'])) {
 			}
 		
 			echo '</ul>';
-		} else { /* Restore session is running */
-			$rid = $_SESSION['rid'];
-
-			if (strcmp($_SESSION['rtype'], 'vex') === 0) {
-				$uid = $_GET['uid'];
-				$content = array();
-				$org = $veeam->getOrganizationID($rid);
-				$users = $veeam->getMailboxes($rid);
-
-				if ($users === 500) {
-					unset($_SESSION['rid']);
-					?>
-					<script>
-					Swal.fire({
-						icon: 'info',
-						title: 'Restore session expired',
-						text: 'Your restore session has expired.'
-					}).then(function(e) {
-						window.location.href = '/exchange';
-					});
-					</script>
-					<?php
-				} else {
-					for ($i = 0; $i < count($users['results']); $i++) {
-						array_push($content, array('name'=> $users['results'][$i]['name'], 'id' => $users['results'][$i]['id']));
-					}
-
-					uasort($content, function($a, $b) {
-						return strcasecmp($a['name'], $b['name']);
-					});
-
-					echo '<button class="btn btn-default btn-danger btn-stop-restore" title="Stop Restore">Stop Restore</button>';
-					echo '<div class="separator"></div>';
-					echo '<ul id="ul-exchange-users">';
-					
-					foreach ($content as $key => $value) {
-						if (isset($uid) && !empty($uid) && ($uid == $value['id'])) {
-							echo '<li class="active"><a href="exchange/' . $org['id'] . '/' . $value['id'] . '">' . $value['name'] . '</a></li>';
-						} else {
-							echo '<li><a href="exchange/' . $org['id'] . '/' . $value['id'] . '">' . $value['name'] . '</a></li>';
-						}
-					}
-					
-					echo '</ul>';
-
-					if (count($users['results']) >= 50) {
-						echo '<div class="text-center">';
-						echo '<a class="btn btn-default load-more-link load-more-mailboxes" data-org="' . $org['id'] . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more mailboxes</a>';
-						echo '</div>';
-					}
-				}
-			} else {
+		} else {
+			$rid = $_SESSION['rid'];		
+			$session = $veeam->getRestoreSession($rid);
+			
+			if (preg_match('/stopped/', strtolower($session['state']))) {
+				unset($_SESSION['rid']);
+				unset($_SESSION['rtype']);
 				?>
 				<script>
 				Swal.fire({
 					icon: 'info',
-					showConfirmButton: false,
-					title: 'Restore session running',
-					text: 'Found another restore session running, please stop the session first if you want to restore Exchange items',
-					<?php
-					if (strcmp($_SESSION['rtype'], 'vesp') === 0) {
-						echo "footer: '<a href=\"/sharepoint\">Go to restore session</a>'";
-					} else {
-						echo "footer: '<a href=\"/onedrive\">Go to restore session</a>'";
-					}
-					?>
-				})
+					title: 'Restore session',
+					text: 'The restore session has expired. In order to continue, start a new restore session'
+				}).then(function(e) {
+					window.location.href = '/sharepoint';
+				});
 				</script>
 				<?php
-				exit;
+			} else {
+				if (isset($_GET['uid'])) $uid = $_GET['uid'];
+				
+				$content = array();
+				$org = $veeam->getOrganizationID($rid);
+				$oid = $org['id'];
+				$users = $veeam->getMailboxes($rid);
+
+				for ($i = 0; $i < count($users['results']); $i++) {
+					array_push($content, array('name'=> $users['results'][$i]['name'], 'id' => $users['results'][$i]['id']));
+				}
+
+				uasort($content, function($a, $b) {
+					return strcasecmp($a['name'], $b['name']);
+				});
+
+				echo '<button class="btn btn-default btn-danger btn-stop-restore" title="Stop Restore">Stop Restore</button>';
+				echo '<div class="separator"></div>';
+				echo '<ul id="ul-exchange-users">';
+				
+				foreach ($content as $key => $value) {
+					if (isset($uid) && !empty($uid) && ($uid == $value['id'])) {
+						echo '<li class="active"><a href="exchange/' . $oid . '/' . $value['id'] . '">' . $value['name'] . '</a></li>';
+					} else {
+						echo '<li><a href="exchange/' . $oid . '/' . $value['id'] . '">' . $value['name'] . '</a></li>';
+					}
+				}
+				
+				echo '</ul>';
+
+				if (count($users['results']) >= $limit) {
+					echo '<div class="text-center">';
+					echo '<a class="btn btn-default load-more-link load-more-mailboxes" data-org="' . $oid . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more mailboxes</a>';
+					echo '</div>';
+				}
 			}
 		}
 		?>
 		</menu>
 		<div class="separator"></div>
 		<div class="bottom-padding"></div>
-	</aside>
-	<main id="main">
+	</div>
+	<div id="main">
 		<h1>Exchange</h1>
 		<div class="exchange-container">
 			<?php
-			if (isset($oid) || $menu) {
-				if (strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
+			if (isset($_GET['oid'])) $oid = $_GET['oid'];
+			
+			if (isset($oid) && !isset($rid)) {
+				if (strtolower($authtype) !== 'mfa' && $check === false && strtolower($administrator) === 'yes') {
 					$org = $veeam->getOrganizationByID($oid);
 				}
 			?>
-			<div class="row marginexplore">
-				<div class="col-sm-2">
-					<div class="input-group flatpickr" data-wrap="true" data-clickOpens="false">
-						<input type="text" class="form-control" id="pit-date" placeholder="Select a date..." data-input>
-						<span class="input-group-addon" data-open><i class="fa fa-calendar"></i></span>
-						<script>
-						$('#pit-date').removeClass('errorClass');
+			<div class="form-inline marginexplore">
+				<div class="input-group flatpickr" data-wrap="true" data-clickOpens="false">
+					<input type="text" class="form-control" id="pit-date" placeholder="Select a date..." data-input>
+					<span class="input-group-addon" data-open><i class="fa fa-calendar"></i></span>
+					<script>
+					$('#pit-date').removeClass('errorClass');
 
-						$('.flatpickr').flatpickr({
-							dateFormat: "Y.m.d H:i",
-							enableTime: true,
-							minDate: "<?php echo date('Y.m.d', strtotime($org['firstBackuptime'])); ?>",
-							maxDate: "<?php echo date('Y.m.d', strtotime($org['lastBackuptime'])); ?>",
-							time_24hr: true
-						});
-						</script>
-					</div>
+					$('.flatpickr').flatpickr({
+						dateFormat: "Y.m.d H:i",
+						enableTime: true,
+						minDate: "<?php echo date('Y.m.d', strtotime($org['firstBackuptime'])); ?>",
+						maxDate: "<?php echo date('Y.m.d', strtotime($org['lastBackuptime'])); ?>",
+						time_24hr: true
+					});
+					</script>
 				</div>
-				<div class="col-sm-10">
-					<button class="btn btn-default btn-secondary btn-start-restore" title="Start Restore" <?php if (isset($_GET['oid'])) { echo 'data-oid="' . $_GET['oid'] . '"'; } ?> data-latest="false">Start Restore</button>
-					<button class="btn btn-default btn-secondary btn-start-restore" title="Explore last backup (<?php echo date('d/m/Y H:i T', strtotime($org['lastBackuptime'])); ?>)" <?php if (isset($_GET['oid'])) { echo 'data-oid="' . $_GET['oid'] . '"'; } ?> data-pit="<?php echo date('Y.m.d H:i', strtotime($org['lastBackuptime'])); ?>" data-latest="true">Explore last backup</button>
-				</div>
+				<button class="btn btn-default btn-secondary btn-start-restore" title="Start Restore" data-oid="<?php echo $oid; ?>" data-latest="false">Start Restore</button>
+				<button class="btn btn-default btn-secondary btn-start-restore" title="Explore Last Backup (<?php echo date('d/m/Y H:i T', strtotime($org['lastBackuptime'])); ?>)" data-oid="<?php echo $oid; ?>" data-pit="<?php echo date('Y.m.d H:i', strtotime($org['lastBackuptime'])); ?>" data-latest="true">Explore Last Backup</button>
 			</div>
 			<?php
 			}
 			
-			if (!isset($_SESSION['rid'])) { /* No restore session is running */
+			if (!isset($_SESSION['rid'])) {
 				if (isset($oid) && !empty($oid)) {
-					$org = $veeam->getOrganizationByID($oid);
 					$users = $veeam->getLicensedUsers($oid);
 					$repo = $veeam->getOrganizationRepository($oid);
 					$usersarray = array();
@@ -232,11 +233,12 @@ if (isset($_SESSION['token'])) {
 						));
 					}
 
-					if (count($users['results']) != 0) {
+					if (count($users['results']) !== 0) {
 						$repousersarray = array();
 						
 						for ($i = 0; $i < count($repo); $i++) {
-							$repoid = end(explode('/', $repo[$i]['_links']['backupRepository']['href']));
+							$repohref = explode('/', $repo[$i]['_links']['backupRepository']['href']);
+							$repoid = end($repohref);
 
 							for ($j = 0; $j < count($users['results']); $j++) {
 								$combinedid = $users['results'][$j]['backedUpOrganizationId'] . $users['results'][$j]['id'];
@@ -257,15 +259,15 @@ if (isset($_SESSION['token'])) {
 						$usersorted = array_values(array_column($repousersarray , null, 'name'));
 					}
 					
-					if (count($usersorted) != 0) {
+					if (isset($usersorted) && count($usersorted) !== 0) {
 					?>
-						<div class="alert alert-info">The following is a limited overview with the backed up accounts and their Exchange objects within the organization. To view the full list, start a restore session.</div>
+						<div class="alert alert-info">The following is a limited overview with backed up accounts and their Exchange objects within the organization. To view the full list, start a restore session.</div>
 						<table class="table table-bordered table-padding table-striped" id="table-exchange-mailboxes">
 							<thead>
 								<tr>
 									<th>Account</th>
-									<th>Last backup</th>
-									<th>Objects in backup</th>
+									<th>Last Backup</th>
+									<th>Objects In Backup</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -297,23 +299,25 @@ if (isset($_SESSION['token'])) {
 						</table>
 						<?php
 					} else {
-						if (strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
+						if (strtolower($authtype) !== 'mfa' && $check === false && strtolower($administrator) === 'yes') {
 							echo '<p>No users found for this organization.</p>';
 						} else {
 							echo '<p>Select a point in time and start the restore.</p>';
 						}
 					}
 				} else {
-					if (strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
+					if (strtolower($authtype) !== 'mfa' && $check === false && strtolower($administrator) === 'yes') {
 						echo '<p>Select an organization to start a restore session.</p>';
 					} else {
 						echo '<p>Select a point in time and start the restore.</p>';
 					}
 				}
-			} else { /* Restore session is running */
+			} else {
+				if (isset($_GET['uid'])) $uid = $_GET['uid'];
+				
 				if (isset($uid) && !empty($uid)) {
 					$owner = $veeam->getMailboxID($rid, $uid);
-					$folders = $veeam->getMailboxFolders($uid, $rid);
+					$folders = $veeam->getMailboxFolders($rid, $uid);
 					$parentfolders = array();
 					
 					for ($i = 0; $i < count($folders['results']); $i++) {
@@ -323,25 +327,7 @@ if (isset($_SESSION['token'])) {
 					}
 					?>
 					<div class="row">
-						<div class="col-sm-2 text-center div-browser">
-							<div class="btn-group dropdown">
-								<button class="btn btn-default dropdown-toggle form-control" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Restore selected <span class="caret"></span></button>
-								<ul class="dropdown-menu dropdown-menu-right">
-								  <li class="dropdown-header">Download as</li>
-								  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST('multipleexport', '<?php echo $uid; ?>', '<?php echo $owner['name']; ?>', 'multiple')"><i class="fa fa-download"></i> PST file</a></li>
-								  <li class="divider"></li>
-								  <li class="dropdown-header">Restore to</li>
-								  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('multiplerestore', '<?php echo $uid; ?>', 'multiple')"><i class="fa fa-upload"></i> Original location</a></li>
-								  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent('multiplerestore', '<?php echo $uid; ?>', 'multiple')"><i class="fa fa-upload"></i> Different location</a></li>
-								</ul>
-							</div>
-						</div>
-						<div class="col-sm-10">
-							<input class="form-control search" id="search-mailbox" placeholder="Filter by item...">
-						</div>
-					</div>
-					<div class="row">
-						<div class="col-sm-2 div-browser zeroPadding">
+						<div class="col-sm-2 zeroPadding">
 							<table class="table table-bordered table-padding table-striped" id="table-exchange-folders">
 								<thead>
 									<tr>
@@ -353,8 +339,8 @@ if (isset($_SESSION['token'])) {
 										<td>
 											<input type="text" class="form-control search" id="jstree_q" placeholder="Hilight a folder...">
 											<div id="jstree">
-												<ul id="ul-exchange-folders">													
-													<?php													
+												<ul id="ul-exchange-folders">				
+													<?php	
 													for ($i = 0; $i < count($parentfolders); $i++) {
 														switch (strtolower($parentfolders[$i]['type'])) {
 															case 'appointment':
@@ -376,7 +362,7 @@ if (isset($_SESSION['token'])) {
 																$icon = 'far fa-folder';
 														}
 														
-														echo '<li data-folderid="'.$parentfolders[$i]['id'].'" data-mailboxid="'.$uid.'" data-jstree=\'{ "opened" : true, "icon" : "' . $icon . '" }\'>'.$parentfolders[$i]['name'].'</li>';
+														echo '<li data-folderid="'.$parentfolders[$i]['id'].'" data-jstree=\'{ "opened" : true, "icon" : "' . $icon . '" }\'>'.$parentfolders[$i]['name'].'</li>';
 													}
 													?>
 												</ul>
@@ -406,21 +392,20 @@ if (isset($_SESSION['token'])) {
 												});
 												
 												$('#jstree').on('activate_node.jstree', function(e, data) {
-													if (data == undefined || data.node == undefined || data.node.id == undefined || data.node.data.folderid == undefined)
+													if (data === undefined || data.node === undefined || data.node.id === undefined || data.node.data.folderid === undefined)
 														return;
 
 													var folderid = data.node.data.folderid;
-													var mailboxid = data.node.data.mailboxid;
 													var parent = data.node.id;
 													
-													loadMailboxItems(folderid, mailboxid, parent);
+													loadMailboxItems(folderid, parent);
 												});
 											});
 											</script>
 											<?php
-											if (count($folders['results']) >= 50) {
+											if (count($folders['results']) >= $limit) {
 												echo '<div class="text-center">';
-												echo '<a class="btn btn-default load-more-link load-more-folders" data-mailboxid="' .  $uid . '" data-offset="' . count($folders['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more folders</a>';
+												echo '<a class="btn btn-default load-more-link load-more-folders" data-offset="' . count($folders['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more folders</a>';
 												echo '</div>';
 											}
 											?>
@@ -429,32 +414,57 @@ if (isset($_SESSION['token'])) {
 								</tbody>
 							</table>
 						</div>
-						<div class="col-sm-10 div-browser-items zeroPadding">
+						<div class="col-sm-10 zeroPadding">
 							<div class="wrapper"><div class="loader hide" id="loader"></div></div>
+							<div class="exchange-controls-padding hide" id="exchange-controls">
+								<input class="form-control search" id="search-mailbox" placeholder="Filter by item...">
+								<div class="form-inline">
+									<strong class="btn-group">Items:</strong>
+									<div class="btn-group dropdown">
+										<button class="btn-link dropdown-toggle" data-toggle="dropdown">Export <span class="caret"></span></button>
+										<ul class="dropdown-menu">
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST('fullfolder', '<?php echo $owner['name']; ?>', 'fullfolder')"><i class="fa fa-download"></i> All items</a></li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST('multipleexport', '<?php echo $owner['name']; ?>', 'multiple')"><i class="fa fa-download"></i> Selected items</a></li>
+										</ul>
+									</div>
+									<div class="btn-group dropdown">
+										<button class="btn btn-link dropdown-toggle" data-toggle="dropdown">Restore <span class="caret"></span></button>
+										<ul class="dropdown-menu">
+										  <li class="dropdown-header">All items</li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('multiplerestore', 'fullfolder')"><i class="fa fa-upload"></i> Original location</a></li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent('multiplerestore', 'fullfolder')"><i class="fa fa-upload"></i> Different location</a></li>
+										  <li class="divider"></li>
+										  <li class="dropdown-header">Selected items</li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('multiplerestore', 'multiple')"><i class="fa fa-upload"></i> Original location</a></li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent('multiplerestore', 'multiple')"><i class="fa fa-upload"></i> Different location</a></li>
+										</ul>
+									</div>
+								</div>
+							</div>
 							<table class="table table-hover table-bordered table-striped table-border" id="table-exchange-items">
 								<thead>
 									<tr>
 										<th class="text-center"><input type="checkbox" id="chk-all" title="Select all"></th>
-										<th class="text-center"><strong>Type</strong></th>
-										<th><strong>From</strong></th>
-										<th><strong>Subject</strong></th>
-										<th class="text-center"><strong>Received</strong></th>
-										<th class="text-center"><strong>Options</strong></th>
+										<th class="text-center">Type</th>
+										<th>From</th>
+										<th>Subject</th>
+										<th>Received</th>
+										<th class="text-center">Options</th>
 									</tr>
 								</thead>
 								<tbody>
 									<tr>
-										<td class="text-center" colspan="6">Select a folder to browse specific items.</td>
+										<td colspan="6">Select a folder to browse specific items.</td>
 									</tr>
 								</tbody>
 							</table>
 							<div class="text-center">
-								<a class="btn btn-default hide load-more-link load-more-items" data-folderid="null" data-mailboxid="<?php echo $uid; ?>" data-offset="50" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more messages</a>
+								<a class="btn btn-default hide load-more-link load-more-items" data-folderid="null" data-offset="<?php echo $limit; ?>" href="<?php echo $_SERVER['REQUEST_URI']; ?>#">Load more messages</a>
 							</div>
 						</div>
 					</div>
 					<?php
-				} else { /* List mailboxes */
+				} else {
 					?>				
 					<table class="table table-bordered table-padding table-striped">
 						<thead>
@@ -479,18 +489,18 @@ if (isset($_SESSION['token'])) {
 							foreach ($mailboxes as $key => $value) {
 							?>
 							<tr>
-								<td><a href="exchange/<?php echo $org['id']; ?>/<?php echo $value['id']; ?>"><?php echo $value['name']; ?></a></td>
+								<td><a href="exchange/<?php echo $oid; ?>/<?php echo $value['id']; ?>"><?php echo $value['name']; ?></a></td>
 								<td><?php echo $value['email']; ?></td>
 								<td class="text-center">
 									<div class="btn-group dropdown">
-										<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button>
+										<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">Restore <span class="caret"></span></button>
 										<ul class="dropdown-menu dropdown-menu-right">
-										  <li class="dropdown-header">Download as</li>
-										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST('<?php echo $value['name']; ?>', '<?php echo $value['id']; ?>', '<?php echo $value['name']; ?>', 'full')"><i class="fa fa-download"></i> PST file</a></li>
+										  <li class="dropdown-header">Export to</li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST('<?php echo $value['id']; ?>', '<?php echo $value['name']; ?>', 'full')"><i class="fa fa-download"></i> PST file</a></li>
 										  <li class="divider"></li>
 										  <li class="dropdown-header">Restore to</li>
-										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('<?php echo $value['name']; ?>', '<?php echo $value['id']; ?>', 'full')"><i class="fa fa-upload"></i> Original location</a></li>
-										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent('<?php echo $value['name']; ?>', '<?php echo $value['id']; ?>', 'full')"><i class="fa fa-upload"></i> Different location</a></li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal('<?php echo $value['id']; ?>', 'full')"><i class="fa fa-upload"></i> Original location</a></li>
+										  <li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent('<?php echo $value['id']; ?>', 'full')"><i class="fa fa-upload"></i> Different location</a></li>
 										</ul>
 									</div>
 								</td>
@@ -501,7 +511,7 @@ if (isset($_SESSION['token'])) {
 						</tbody>
 					</table>
 					<?php
-					if (count($users['results']) >= 50) {
+					if (count($users['results']) >= $limit) {
 						echo '<div class="text-center">';
 						echo '<a class="btn btn-default load-more-link load-more-mailboxes" data-org="' . $oid . '" data-offset="' . count($users['results']) . '" href="' . $_SERVER['REQUEST_URI'] . '#">Load more mailboxes</a>';
 						echo '</div>';
@@ -510,10 +520,37 @@ if (isset($_SESSION['token'])) {
 			}
 			?>
 		</div>
-	</main>
+	</div>
 </div>
-<div class="bottom-padding"></div>
+
 <script>
+function disableTree() {
+	$('#jstree li.jstree-node').each(function(e) {
+    $('#jstree').jstree('disable_node', this.id)
+  })
+  
+  $('#jstree i.jstree-ocl').off('click.block').on('click.block', function(e) {
+    return false;
+  });
+}
+
+function enableTree() {
+  $('#jstree li.jstree-node').each(function(e) {
+    $('#jstree').jstree('enable_node', this.id)
+  });
+  
+  $('#jstree i.jstree-ocl').off('click.block');
+}
+
+function hideTooltip() {
+	setTimeout(function() {
+	  $('#btn-copy').tooltip('hide');
+  }, 1000);
+}
+function setTooltip(message) {
+  $('#btn-copy').tooltip('hide').attr('data-original-title', message).tooltip('show');
+}
+
 $('#logout').click(function(e) {
 	e.preventDefault();
 	
@@ -528,7 +565,7 @@ $('#logout').click(function(e) {
 	swalWithBootstrapButtons.fire({
 		icon: 'question',
 		title: 'Logout',
-		text: 'You are about to logout. Are you sure you want to continue?',
+		text: 'You are about to log out. Are you sure you want to continue?',
 		showCancelButton: true,
 		confirmButtonText: 'Logout',
 		cancelButtonText: 'Cancel',
@@ -542,11 +579,11 @@ $('#logout').click(function(e) {
 });
 
 $('.btn-start-restore').click(function(e) {
-    if (typeof $(this).data('jid') !== 'undefined') {
+    if (typeof $(this).data('jid') !== undefined) {
         var jid = $(this).data('jid');
     }
 
-    if (typeof $(this).data('oid') !== 'undefined') {
+    if (typeof $(this).data('oid') !== undefined) {
         var oid = $(this).data('oid');
     } else {
         var oid = 'tenant';
@@ -561,8 +598,8 @@ $('.btn-start-restore').click(function(e) {
 			Swal.fire({
 				icon: 'info',
 				title: 'No date selected',
-				text: 'Please select a date first before starting the restore or use the \"explore last backup\" button.'
-			})
+				text: 'Select a date first before starting the restore or use the \"Explore Last Backup\" button'
+			});
 			
 			return;
 		} else {
@@ -578,16 +615,16 @@ $('.btn-start-restore').click(function(e) {
 	
 	Swal.fire({
 		icon: 'info',
-		title: 'Restore is starting',
-		text: 'Just a moment while the restore session is starting...',
+		title: 'Restore session',
+		text: 'Just a moment while the restore session is starting',
 		allowOutsideClick: false,
-	})
+	});
 
-    $.post('veeam.php', {'action' : 'startrestore', 'json' : json, 'id' : oid}).done(function(data) {
+    $.post('veeam.php', {'action' : 'startrestore', 'id' : oid, 'json' : json}).done(function(data) {
         if (data.match(/([a-zA-Z0-9]{8})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{4})-([a-zA-Z0-9]{12})/g)) {
 			Swal.fire({
 				icon: 'success',
-				title: 'Session started',
+				title: 'Restore session',
 				text: 'Restore session has been started and you can now perform restores'
 			}).then(function(e) {
 				window.location.href = 'exchange';
@@ -595,9 +632,9 @@ $('.btn-start-restore').click(function(e) {
         } else {
             Swal.fire({
 				icon: 'error',
-				title: 'Error starting restore session',
+				title: 'Restore session',
 				text: '' + data
-			})
+			});
 			
             $(':button').prop('disabled', false);
         }
@@ -620,7 +657,7 @@ $('.btn-stop-restore').click(function(e) {
 	
 	swalWithBootstrapButtons.fire({
 		icon: 'question',
-		title: 'Stop the restore session?',
+		title: 'Restore session',
 		text: 'This will terminate any restore options for the specific point in time',
 		showCancelButton: true,
 		confirmButtonText: 'Stop',
@@ -628,10 +665,12 @@ $('.btn-stop-restore').click(function(e) {
 	}).then(function(result) {
 		if (result.isConfirmed) {
 			$.post('veeam.php', {'action' : 'stoprestore', 'rid' : rid}).done(function(data) {
-				if (data === 'success') {
+				var response = JSON.parse(data);
+				
+				if (response['message'] !== undefined) {
 					swalWithBootstrapButtons.fire({
 						icon: 'success', 
-						title: 'Restore session was stopped',
+						title: 'Restore session',
 						text: 'The restore session was stopped successfully',
 					}).then(function(e) {
 						window.location.href = 'exchange';
@@ -641,7 +680,7 @@ $('.btn-stop-restore').click(function(e) {
 				
 					swalWithBootstrapButtons.fire({
 						icon: 'error', 
-						title: 'Failed to stop restore session',
+						title: 'Restore session',
 						text: '' + response.slice(0, -1),
 					}).then(function(e) {
 						window.location.href = 'exchange';
@@ -652,13 +691,6 @@ $('.btn-stop-restore').click(function(e) {
 			return;
 		}
 	})
-});
-
-$('hide.bs.dropdown').dropdown(function(e) {
-    $(e.target).find('>.dropdown-menu:first').slideUp();
-});
-$('show.bs.dropdown').dropdown(function(e) {
-    $(e.target).find('>.dropdown-menu:first').slideDown();
 });
 
 $('#chk-all').click(function(e) {
@@ -678,24 +710,17 @@ $('#search-mailbox').keyup(function(e) {
     });
 });
 
-$('ul#ul-exchange-users li').click(function(e) {
-    $(this).parent().find('li.active').removeClass('active');
-    $(this).addClass('active');
-});
-
 $('.load-more-folders').click(function(e) {
-    var mailboxid = $(this).data('mailboxid');
     var offset = $(this).data('offset');
     
-	loadMailboxFolders(mailboxid, offset);
+	loadMailboxFolders(offset);
 });
 $('.load-more-items').click(function(e) {
     var folderid = $(this).data('folderid');
-    var mailboxid = $(this).data('mailboxid');
     var offset = $(this).data('offset');
 	var type = $(this).data('type');
     
-	loadMessages(mailboxid, folderid, offset);
+	loadMessages(folderid, offset);
 });
 $('.load-more-mailboxes').click(function(e) {
     var offset = $(this).data('offset');
@@ -704,40 +729,58 @@ $('.load-more-mailboxes').click(function(e) {
 	loadMailboxes(org, offset);
 });
 
-function downloadMsg(itemid, mailboxid, mailsubject) {
+function downloadMSG(itemid, mailsubject) {
     var rid = '<?php echo $rid; ?>';
+	var mailboxid = '<?php echo $uid; ?>';
     var json = '{ "savetoMsg": null }';
 	
 	Swal.fire({
 		icon: 'info',
-		title: 'Download is starting',
+		title: 'Export',
 		text: 'Download will start soon',
 		allowOutsideClick: false,
-	})
+	});
     
-	$.post('veeam.php', {'action': 'exportmailitem', 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {	
-		if (data) {
-			$.redirect('download.php', {ext : 'msg', file : data, name : mailsubject}, 'POST');
+	$.post('veeam.php', {'action': 'exportmailitem', 'rid' : rid, 'mailboxid' : mailboxid, 'itemid' : itemid, 'json' : json}).done(function(data) {	
+		var response = JSON.parse(data);
+		
+		if (response['exportFailed'] === undefined) {
+			if (response['exportFile'] !== undefined) {
+				var file = response['exportFile'];
+				
+				$.redirect('download.php', {'ext' : 'msg', 'file' : file, 'name' : mailsubject}, 'POST');
+				
+				Swal.close();
+			}
 		} else {
 			Swal.fire({
 				icon: 'error',
-				title: 'Export failed',
-				text: 'Export failed.'
-			})
-			return;
+				title: 'Export',
+				html: '' + response['exportFailed'],
+				allowOutsideClick: false,
+			});
 		}
+			
+		return;
 	});
 }
 
-function downloadPST(itemid, mailboxid, mailsubject, type) {
+function downloadPST(itemid, mailsubject, type) {
     var rid = '<?php echo $rid; ?>';
+	<?php
+	if (isset($uid)) {
+	?>
+	var mailboxid = '<?php echo $uid; ?>';
+	<?php
+	}
+	?>
 	
 	Swal.fire({
 		icon: 'info',
-		title: 'Download is starting',
+		title: 'Export',
 		text: 'Export in progress and your download will start soon',
 		allowOutsideClick: false,
-	})
+	});
 	
 	if (type == 'multiple') {
 		var act = 'exportmultiplemailitems';
@@ -746,12 +789,11 @@ function downloadPST(itemid, mailboxid, mailsubject, type) {
 		
 		if ($("input[name='checkbox-mail']:checked").length === 0) {
 			Swal.close();
-			
 			Swal.fire({
 				icon: 'info',
-				title: 'Unable to restore',
-				text: 'No items have been selected.'
-			})
+				title: 'Export',
+				text: 'Cannot export items. No items have been selected'
+			});
 			
 			return;
 		}
@@ -771,8 +813,14 @@ function downloadPST(itemid, mailboxid, mailsubject, type) {
 	} else {
 		if (type == 'single') {
 			var act = 'exportmailitem';
+		} else if (type == 'fullfolder') {
+			var act = 'exportmailfolder';		
+			var node = $('#jstree').jstree('get_selected', true);
+			var itemid = node[0].data.folderid;
+			var mailsubject = 'mailbox-folder-' + mailsubject;
 		} else {
-			var act = 'exportmailbox';
+			var act = 'exportmailbox';	
+			var mailboxid = itemid;
 			var mailsubject = 'mailbox-' + mailsubject;
 		}
 		
@@ -783,32 +831,48 @@ function downloadPST(itemid, mailboxid, mailsubject, type) {
 		}';
 	}
 
-	$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
-		if (data && data != 500) {
-			$.redirect('download.php', {'ext' : 'pst', 'file' : data, 'name' : mailsubject}, 'POST');
-			
-			Swal.close();
+	$.post('veeam.php', {'action' : act, 'rid' : rid, 'mailboxid' : mailboxid, 'itemid' : itemid, 'json' : json}).then(function(data) {
+		var response = JSON.parse(data);
+		
+		if (response['exportFailed'] === undefined) {
+			if (response['exportFile'] !== undefined) {
+				var file = response['exportFile'];
+				
+				$.redirect('download.php', {'ext' : 'pst', 'file' : file, 'name' : mailsubject}, 'POST');
+				
+				Swal.close();
+			}
 		} else {
 			Swal.fire({
 				icon: 'error',
-				title: 'Export failed',
-				text: '' + data
-			})
+				title: 'Export',
+				html: '' + response['exportFailed'],
+				allowOutsideClick: false,
+			});
 		}
 			
 		return;
 	});
 }
 
-function restoreToDifferent(itemid, mailboxid, type) {
+function restoreToDifferent(itemid, type) {
     var rid = '<?php echo $rid; ?>';
+	<?php
+	if (isset($uid)) {
+	?>
+	var mailboxid = '<?php echo $uid; ?>';
+	<?php
+	}
+	?>
 	
-	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) {
+	
+	if (type === 'multiple' && $("input[name='checkbox-mail']:checked").length === 0) {
 		Swal.fire({
 			icon: 'info',
-			title: 'Unable to restore',
-			text: 'No items have been selected.'
-		})
+			title: 'Restore',
+			text: 'Cannot restore items. No items have been selected'
+		});
+		
 		return;
 	}
 	
@@ -822,7 +886,7 @@ function restoreToDifferent(itemid, mailboxid, type) {
 	});
 	
 	swalWithBootstrapButtons.fire({
-		title: 'Restore to different location',
+		title: 'Restore',
 		html: 
 			'<form method="POST">' +
 			'<div class="form-group row">' +
@@ -844,7 +908,7 @@ function restoreToDifferent(itemid, mailboxid, type) {
 			'<div class="form-group row">' + 
 			'<label for="restore-different-folder" class="col-sm-4 text-left">Folder:</label>' +
 			'<div class="col-sm-8"><input type="text" class="form-control" id="restore-different-folder" placeholder="Custom folder (optional)">' +
-			'<h6 class="text-left">By default items will be restored in a folder named <em>Restored-via-web-client</em>.</h6>' +
+			'<h6 class="text-left">By default items will be restored in a folder named <em>Restored-emails</em>.</h6>' +
 			'</div>' +
 			'</div>' +
 			'</form>',
@@ -886,13 +950,13 @@ function restoreToDifferent(itemid, mailboxid, type) {
 			
 			Swal.fire({
 				icon: 'info',
-				title: 'Item restore',
+				title: 'Restore',
 				text: 'Restore in progress...',
 				allowOutsideClick: false,
-			})
+			});
 			
 			if (typeof folder === undefined || !folder) {
-				folder = 'Restored-via-web-client';
+				folder = 'Restored-emails';
 			}
 			
 			if (type == 'multiple') {
@@ -924,6 +988,10 @@ function restoreToDifferent(itemid, mailboxid, type) {
 			} else {
 				if (type == 'single') {
 					var act = 'restoremailitem';
+				} else if (type == 'fullfolder') {
+					var act = 'restoremailfolder';		
+					var node = $('#jstree').jstree('get_selected', true);
+					var itemid = node[0].data.folderid;
 				} else {
 					var act = 'restoremailbox';
 				}
@@ -946,7 +1014,7 @@ function restoreToDifferent(itemid, mailboxid, type) {
 				}';
 			}
 
-			$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
+			$.post('veeam.php', {'action' : act, 'rid' : rid, 'mailboxid' : mailboxid, 'itemid' : itemid, 'json' : json}).done(function(data) {
 				var response = JSON.parse(data);
 				
 				if (response['restoreFailed'] === undefined) {
@@ -970,17 +1038,17 @@ function restoreToDifferent(itemid, mailboxid, type) {
 				
 					Swal.fire({
 						icon: 'info',
-						title: 'Item restore',
+						title: 'Restore',
 						html: '' + result,
 						allowOutsideClick: false,
-					})
+					});
 				} else {
 					Swal.fire({
-						icon: 'info',
-						title: 'Item restore',
-						html: 'Restore failed: ' + response['restoreFailed'],
+						icon: 'error',
+						title: 'Restore',
+						html: '' + response['restoreFailed'],
 						allowOutsideClick: false,
-					})
+					});
 				}
 			});
 		} else {
@@ -989,20 +1057,29 @@ function restoreToDifferent(itemid, mailboxid, type) {
 	});
 } 
 
-function restoreToOriginal(itemid, mailboxid, type) {
+function restoreToOriginal(itemid, type) {
     var rid = '<?php echo $rid; ?>';
-
+	<?php
+	if (isset($uid)) {
+	?>
+	var mailboxid = '<?php echo $uid; ?>';
+	<?php
+	}
+	?>
+	
+	
 	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) {
 		Swal.fire({
 			icon: 'info',
-			title: 'Unable to restore',
-			text: 'No items have been selected.'
-		})
+			title: 'Restore',
+			text: 'Cannot restore items. No items have been selected'
+		});
+		
 		return;
 	}
 	
 	const swalWithBootstrapButtons = Swal.mixin({
- 	  title: 'Restore to original location',
+ 	  title: 'Restore',
 	  allowOutsideClick: false,
 	  buttonsStyling: false,
 	  focusConfirm: false,
@@ -1018,7 +1095,7 @@ function restoreToOriginal(itemid, mailboxid, type) {
 	});
 	
 	swalWithBootstrapButtons.fire({
-		text: 'Select authentication method',
+		text: 'Select authentication method to perform the restore',
 		input: 'select',
 		inputOptions: {
 		<?php 
@@ -1083,10 +1160,10 @@ function restoreToOriginal(itemid, mailboxid, type) {
 							
 							Swal.fire({
 								icon: 'info',
-								title: 'Item restore',
+								title: 'Restore',
 								text: 'Restore in progress...',
 								allowOutsideClick: false,
-							})
+							});
 
 							if (type == 'multiple') {
 								var act = 'restoremultiplemailitems';
@@ -1107,7 +1184,11 @@ function restoreToOriginal(itemid, mailboxid, type) {
 							} else {
 								if (type == 'single') {
 									var act = 'restoremailitem';
-								} else if (type == 'full') {
+								} else if (type == 'fullfolder') {
+									var act = 'restoremailfolder';		
+									var node = $('#jstree').jstree('get_selected', true);
+									var itemid = node[0].data.folderid;
+								} else {
 									var act = 'restoremailbox';
 								}
 								
@@ -1118,7 +1199,7 @@ function restoreToOriginal(itemid, mailboxid, type) {
 								}';
 							}
 							
-							$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
+							$.post('veeam.php', {'action' : act, 'rid' : rid, 'mailboxid' : mailboxid, 'itemid' : itemid, 'json' : json}).done(function(data) {
 								var response = JSON.parse(data);
 								
 								if (response['restoreFailed'] === undefined) {
@@ -1142,17 +1223,17 @@ function restoreToOriginal(itemid, mailboxid, type) {
 								
 									Swal.fire({
 										icon: 'info',
-										title: 'Item restore',
+										title: 'Restore',
 										html: '' + result,
 										allowOutsideClick: false,
-									})
+									});
 								} else {
 									Swal.fire({
-										icon: 'info',
-										title: 'Item restore',
-										html: 'Restore failed: ' + response['restoreFailed'],
+										icon: 'error',
+										title: 'Restore',
+										html: '' + response['restoreFailed'],
 										allowOutsideClick: false,
-									})
+									});
 								}
 							});
 						}
@@ -1162,6 +1243,7 @@ function restoreToOriginal(itemid, mailboxid, type) {
 						html: 
 							'<form class="form-horizontal">' +
 							'<div class="form-group margin-left">' +
+							'<div class="alert alert-info text-left" role="alert">You can find this number in the application settings of your Microsoft Azure Active Directory, as described in <a href="https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal" target="_blank">this Microsoft article</a>.</div>' +
 							'<label for="restore-original-applicationid" class="col-sm-4 control-label">Application ID:</label>' +
 							'<div class="col-sm-8">' +
 							<?php 
@@ -1206,17 +1288,17 @@ function restoreToOriginal(itemid, mailboxid, type) {
 							var json = '{ "targetApplicationId" : "' + applicationid + '", }';
 							
 							clipboard.on('success', function(e) {
-							  setTooltip('Copied!');
+							  setTooltip('Copied');
 							  hideTooltip();
 							});
 							clipboard.on('error', function(e) {
-							  setTooltip('Failed!');
+							  setTooltip('Failed');
 							  hideTooltip();
 							});
 							
 							Swal.fire({
-								title: 'Restore to original location',
-								text: 'Loading, please wait...',
+								title: 'Restore',
+								text: 'Loading...',
 							});
 							
 							$.post('veeam.php', {'action' : 'getrestoredevicecode', 'rid' : rid, 'json' : json}).done(function(data) {
@@ -1225,12 +1307,12 @@ function restoreToOriginal(itemid, mailboxid, type) {
 
 								swalWithBootstrapButtons.fire({
 									html: 
-										'<form class="form-horizontal">' +
+										'<form class="form-horizontal" onsubmit="return false">' +
 										'<div class="form-group text-left margin-left">' +
 										'<span>To continue, open <a href="https://microsoft.com/devicelogin" target="_blank">https://microsoft.com/devicelogin</a> and enter the below code to authenticate.</span><br><br>' +
 										'<div class="row">' +
 										'<div class="col-sm-4"><input type="text" class="form-control" id="restore-original-usercode" value="' + usercode + '" readonly></div>' +
-										'<div class="col-sm-8"><button type="button" class="btn form-check" id="btn-copy" data-clipboard-target="#restore-original-usercode" data-placement="right">Copy to clipboard</button></div><br><br>' +
+										'<div class="col-sm-8"><button class="btn form-check" id="btn-copy" data-clipboard-target="#restore-original-usercode" data-placement="right">Copy to clipboard</button></div><br><br>' +
 										'</div>' + 
 										'</div>' +
 										'</form>',
@@ -1243,10 +1325,10 @@ function restoreToOriginal(itemid, mailboxid, type) {
 									if (result.isConfirmed) {
 										Swal.fire({
 											icon: 'info',
-											title: 'Item restore',
+											title: 'Restore',
 											text: 'Restore in progress...',
 											allowOutsideClick: false,
-										})
+										});
 
 										if (type == 'multiple') {
 											var act = 'restoremultiplemailitems';
@@ -1266,7 +1348,11 @@ function restoreToOriginal(itemid, mailboxid, type) {
 										} else {
 											if (type == 'single') {
 												var act = 'restoremailitem';
-											} else if (type == 'full') {
+											} else if (type == 'fullfolder') {
+												var act = 'restoremailfolder';		
+												var node = $('#jstree').jstree('get_selected', true);
+												var itemid = node[0].data.folderid;
+											} else {
 												var act = 'restoremailbox';
 											}
 											
@@ -1276,7 +1362,7 @@ function restoreToOriginal(itemid, mailboxid, type) {
 											}';
 										}
 										
-										$.post('veeam.php', {'action' : act, 'itemid' : itemid, 'mailboxid' : mailboxid, 'rid' : rid, 'json' : json}).done(function(data) {
+										$.post('veeam.php', {'action' : act, 'rid' : rid, 'mailboxid' : mailboxid, 'itemid' : itemid, 'json' : json}).done(function(data) {
 											var response = JSON.parse(data);
 											
 											if (response['restoreFailed'] === undefined) {
@@ -1300,17 +1386,17 @@ function restoreToOriginal(itemid, mailboxid, type) {
 											
 												Swal.fire({
 													icon: 'info',
-													title: 'Item restore',
+													title: 'Restore',
 													html: '' + result,
 													allowOutsideClick: false,
-												})
+												});
 											} else {
 												Swal.fire({
-													icon: 'info',
-													title: 'Item restore',
-													html: 'Restore failed: ' + response['restoreFailed'],
+													icon: 'error',
+													title: 'Restore',
+													html: '' + response['restoreFailed'],
 													allowOutsideClick: false,
-												})
+												});
 											}
 										});
 										
@@ -1325,58 +1411,32 @@ function restoreToOriginal(itemid, mailboxid, type) {
 	});
 }
 
-function hideTooltip() {
-  setTimeout(function() {
-	  $('#btn-copy').tooltip('hide');
-  }, 1000);
-}
-
-function setTooltip(message) {
-  $('#btn-copy').tooltip('hide').attr('data-original-title', message).tooltip('show');
-}
-
-function disableTree() {
-  $('#jstree li.jstree-node').each(function(e) {
-    $('#jstree').jstree('disable_node', this.id)
-  })
-  
-  $('#jstree i.jstree-ocl').off('click.block').on('click.block', function(e) {
-    return false;
-  });
-}  
-
-function enableTree() {
-  $('#jstree li.jstree-node').each(function(e) {
-    $('#jstree').jstree('enable_node', this.id)
-  });
-  
-  $('#jstree i.jstree-ocl').off('click.block');
-}
-
-function fillTable(response, mailboxid) {
-    if (response.results.length !== 0) {
+function fillTable(response) {
+	if (response.results.length !== 0) {
 		for (var i = 0; i < response.results.length; i++) {
-			if (response.results[i].itemClass != 'IPM.Appointment') {
+			if (response.results[i].itemClass !== 'IPM.Appointment') {
 				var itemid = response.results[i].id;
 				var mailsubject = response.results[i].subject;
+				mailsubject = mailsubject.replace(/'/g, '');
+				mailsubject = mailsubject.replace(/"/g, '');
 				
 				$('#table-exchange-items tbody').append('<tr> \
 					<td class="text-center"><input type="checkbox" name="checkbox-mail" value="' + response.results[i].id + '"></td> \
 					<td class="text-center"><span class="logo fa fa-envelope"></span></td> \
 					<td>' + response.results[i].from + '</td> \
 					<td>' + response.results[i].subject + '</td> \
-					<td class="text-center">' + moment(response.results[i].received).format('DD/MM/YYYY HH:mm') + '</td> \
+					<td>' + moment(response.results[i].received).format('DD/MM/YYYY HH:mm') + '</td> \
 					<td class="text-center"> \
 					<div class="btn-group dropdown"> \
-					<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
+					<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">Restore <span class="caret"></span></button> \
 					<ul class="dropdown-menu dropdown-menu-right"> \
-					<li class="dropdown-header">Download as</li> \
-					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadMsg(\'' + itemid + '\', \'' + mailboxid + '\', \'' + mailsubject + '\')"><i class="fa fa-download"></i> MSG file</a></li> \
-					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST(\'' + itemid + '\', \'' + mailboxid + '\', \'' + mailsubject + '\', \'single\')"><i class="fa fa-download"></i> PST file</a></li> \
+					<li class="dropdown-header">Export to</li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadMSG(\'' + itemid + '\', \'' + mailsubject + '\')"><i class="fa fa-download"></i> MSG file</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST(\'' + itemid + '\', \'' + mailsubject + '\', \'single\')"><i class="fa fa-download"></i> PST file</a></li> \
 					<li class="divider"></li> \
 					<li class="dropdown-header">Restore to</li> \
-					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + itemid + '\', \'' + mailboxid + '\', \'single\')"><i class="fa fa-upload"></i> Original location</a></li> \
-					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent(\'' + itemid + '\', \'' + mailboxid + '\', \'single\')"><i class="fa fa-upload"></i> Different location</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + itemid + '\', \'single\')"><i class="fa fa-upload"></i> Original location</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent(\'' + itemid + '\', \'single\')"><i class="fa fa-upload"></i> Different location</a></li> \
 					</ul> \
 					</div> \
 					</td> \
@@ -1390,15 +1450,15 @@ function fillTable(response, mailboxid) {
 					<td></td> \
 					<td class="text-center"> \
 					<div class="btn-group dropdown"> \
-					<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
+					<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">Restore <span class="caret"></span></button> \
 					<ul class="dropdown-menu dropdown-menu-right"> \
-					<li class="dropdown-header">Download as</li> \
-					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadMsg(\'' + itemid + '\', \'' + mailboxid + '\', \'' + mailsubject + '\')"><i class="fa fa-download"></i> MSG file</a></li> \
-					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST(\'' + itemid + '\', \'' + mailboxid + '\', \'' + mailsubject + '\', \'single\')"><i class="fa fa-download"></i> PST file</a></li> \
+					<li class="dropdown-header">Export to</li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadMSG(\'' + itemid + '\', \'' + mailsubject + '\')"><i class="fa fa-download"></i> MSG file</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST(\'' + itemid + '\', \'' + mailsubject + '\', \'single\')"><i class="fa fa-download"></i> PST file</a></li> \
 					<li class="divider"></li> \
 					<li class="dropdown-header">Restore to</li> \
-					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + itemid + '\', \'' + mailboxid + '\', \'single\')"><i class="fa fa-upload"></i> Original location</a></li> \
-					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent(\'' + itemid + '\', \'' + mailboxid + '\', \'single\')"><i class="fa fa-upload"></i> Different location</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + itemid + '\', \'single\')"><i class="fa fa-upload"></i> Original location</a></li> \
+					<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent(\'' + itemid + '\', \'single\')"><i class="fa fa-upload"></i> Different location</a></li> \
 					</ul> \
 					</div> \
 					</td> \
@@ -1409,12 +1469,13 @@ function fillTable(response, mailboxid) {
 }
 
 function loadMailboxes(org, offset) {
+	var limit = <?php echo $limit; ?>;
 	var rid = '<?php echo $rid; ?>';
-	
-    $.post('veeam.php', {'action' : 'getmailboxes', 'offset' : offset, 'rid' : rid}).done(function(data) {
+		
+    $.post('veeam.php', {'action' : 'getmailboxes', 'rid' : rid, 'offset' : offset}).done(function(data) {
         var response = JSON.parse(data);
 
-        if (response.results.length != 0) {
+        if (typeof response !== undefined && response.results.length !== 0) {
 			for (var i = 0; i < response.results.length; i++) {
 				if ($('#table-exchange-mailboxes').length > 0){
 					$('#table-exchange-mailboxes tbody').append('<tr> \
@@ -1422,14 +1483,14 @@ function loadMailboxes(org, offset) {
 						<td>' + response.results[i].email + '</td> \
 						<td class="text-center"> \
 						<div class="btn-group dropdown"> \
-						<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Options <span class="caret"></span></button> \
+						<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">Restore <span class="caret"></span></button> \
 						<ul class="dropdown-menu dropdown-menu-right"> \
-						<li class="dropdown-header">Download as</li> \
-						<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST(\'' + response.results[i].name + '\', \'' + response.results[i].id + '\', \'' + response.results[i].name + '\', \'full\')"><i class="fa fa-download"></i> PST file</a></li> \
+						<li class="dropdown-header">Export to</li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadPST(\'' + response.results[i].id + '\', \'' + response.results[i].name + '\', \'full\')"><i class="fa fa-download"></i> PST file</a></li> \
 						<li class="divider"></li> \
 						<li class="dropdown-header">Restore to</li> \
-						<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + response.results[i].name + '\', \'' + response.results[i].id + '\', \'full\')"><i class="fa fa-upload"></i> Original location</a></li> \
-						<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent(\'' + response.results[i].name + '\', \'' + response.results[i].id + '\', \'full\')"><i class="fa fa-upload"></i> Different location</a></li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + response.results[i].name + '\', \'full\')"><i class="fa fa-upload"></i> Original location</a></li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToDifferent(\'' + response.results[i].name + '\', \'full\')"><i class="fa fa-upload"></i> Different location</a></li> \
 						</ul> \
 						</div> \
 						</td> \
@@ -1439,8 +1500,8 @@ function loadMailboxes(org, offset) {
 				$('#ul-exchange-users').append('<li><a href="exchange/' + org + '/' + response.results[i].id + '">' + response.results[i].name + '</a></li>');
 			}
 			
-			if (response.results.length >= 50) {
-				$('a.load-more-mailboxes').data('offset', offset + 50);
+			if (response.results.length >= limit) {
+				$('a.load-more-mailboxes').data('offset', offset + limit);
 			} else {
 				$('a.load-more-mailboxes').addClass('hide');
 			}
@@ -1448,13 +1509,18 @@ function loadMailboxes(org, offset) {
     });
 }
 
-function loadMailboxFolders(mailboxid, offset) {
+<?php
+	if (isset($uid)) {
+?>
+function loadMailboxFolders(offset) {
+	var limit = <?php echo $limit; ?>;
+	var mailboxid = '<?php echo $uid; ?>';
 	var rid = '<?php echo $rid; ?>';
 	
-    $.post('veeam.php', {'action' : 'getmailboxfolders', 'mailboxid' : mailboxid, 'offset' : offset, 'rid' : rid}).done(function(data) {
+    $.post('veeam.php', {'action' : 'getmailboxfolders', 'rid' : rid, 'mailboxid' : mailboxid, 'offset' : offset}).done(function(data) {
         var response = JSON.parse(data);
 
-        if (response.results.length != 0) {
+        if (typeof response !== undefined && response.results.length !== 0) {
 			var icon, type;
 			
 			for (var i = 0; i < response.results.length; i++) {
@@ -1480,11 +1546,11 @@ function loadMailboxFolders(mailboxid, offset) {
 						icon = 'far fa-folder';
 				}
 				
-				$('#jstree').jstree('create_node', '#', {data: {"folderid" : response.results[i].id, "mailboxid" : mailboxid, "jstree" : {"icon" : icon}}, text: response.results[i].name});
+				$('#jstree').jstree('create_node', '#', {data: {"folderid" : response.results[i].id, "jstree" : {"icon" : icon}}, text: response.results[i].name});
 			}
 			
-			if (response.results.length >= 50) {
-				$('a.load-more-folders').data('offset', offset + 50);
+			if (response.results.length >= limit) {
+				$('a.load-more-folders').data('offset', offset + limit);
 			} else {
 				$('a.load-more-folders').addClass('hide');
 			}
@@ -1492,16 +1558,18 @@ function loadMailboxFolders(mailboxid, offset) {
     });
 }
 
-function loadMailboxItems(folderid, mailboxid, parent) {
+function loadMailboxItems(folderid, parent) {
+	var limit = <?php echo $limit; ?>;
+	var mailboxid = '<?php echo $uid; ?>';
 	var rid = '<?php echo $rid; ?>';
 	
 	disableTree();
 	
-	$.post('veeam.php', {'action' : 'getmailboxfolders', 'folderid' : folderid, 'mailboxid' : mailboxid, 'offset' : 0, 'limit' : 250, 'rid' : rid}).done(function(data) {
+	$.post('veeam.php', {'action' : 'getmailboxfolders', 'rid' : rid, 'folderid' : folderid, 'mailboxid' : mailboxid}).done(function(data) {
 		var responsefolders = JSON.parse(data);
 		
 		if (parent !== null) {
-			if (responsefolders.results.length !== 0) {
+			if (typeof responsefolders !== undefined && responsefolders.results.length !== 0) {
 				var node = $('#jstree').jstree('get_selected');
 				var children = $('#jstree').jstree('get_children_dom', node);
 				var responsefolderid, responsefoldername;
@@ -1511,13 +1579,13 @@ function loadMailboxItems(folderid, mailboxid, parent) {
 						responsefolderid = responsefolders.results[i].id;
 						responsefoldername = responsefolders.results[i].name;
 						
-						$('#jstree').jstree('create_node', parent, {data: {"folderid" : responsefolderid, "mailboxid" : mailboxid, "jstree" : {"icon" : "far fa-folder"}}, text: responsefoldername});
+						$('#jstree').jstree('create_node', parent, {data: {"folderid" : responsefolderid, "jstree" : {"icon" : "far fa-folder"}}, text: responsefoldername});
 						
 						$('#jstree').on('create_node.jstree', function (e, data) {
 							$('#jstree').jstree('open_node', data.parent);
 						});
 					}
-				} else {
+					} else {
 					var childrenFolderidArray = [];
 					var selectedNode, existingid;
 					
@@ -1533,7 +1601,7 @@ function loadMailboxItems(folderid, mailboxid, parent) {
 						responsefoldername = responsefolders.results[i].name;
 						
 						if (!childrenFolderidArray.push(responsefolderid)) {
-							$('#jstree').jstree('create_node', node, {data: {"folderid" : responsefolderid, "mailboxid" : mailboxid, "jstree" : {"icon" : "far fa-folder"}}, text: responsefoldername});
+							$('#jstree').jstree('create_node', node, {data: {"folderid" : responsefolderid, "jstree" : {"icon" : "far fa-folder"}}, text: responsefoldername});
 							
 							$('#jstree').on('create_node.jstree', function (e, data) {
 								$('#jstree').jstree('open_node', data.parent);
@@ -1549,20 +1617,21 @@ function loadMailboxItems(folderid, mailboxid, parent) {
 	$('#loader').removeClass('hide');
 	$('a.load-more-items').addClass('hide');
 	
-    $.post('veeam.php', {'action' : 'getmailitems', 'folderid' : folderid, 'mailboxid' : mailboxid, 'rid' : rid}).done(function(data) {
+    $.post('veeam.php', {'action' : 'getmailboxitems', 'rid' : rid, 'mailboxid' : mailboxid, 'folderid' : folderid}).done(function(data) {
         var responseitems = JSON.parse(data);
 
-        if (typeof responseitems !== 'undefined' && responseitems.results.length != 0) {
-            fillTable(responseitems, mailboxid);
+        if (typeof responseitems !== undefined && responseitems.results.length !== 0) {
+            fillTable(responseitems);
+			$('#exchange-controls').removeClass('hide');
 			
-			if (responseitems.results.length >= 50) {
+			if (responseitems.results.length >= limit) {
 				$('a.load-more-items').removeClass('hide');
 				$('a.load-more-items').data('folderid', folderid);
 			} else {
 				$('a.load-more-items').addClass('hide');
 			}
 		} else {
-			$('#table-exchange-items tbody').append('<tr><td class="text-center" colspan="6">No items available in this folder.</td></tr>');
+			$('#table-exchange-items tbody').append('<tr><td colspan="6">No items available.</td></tr>');
 		}
 		
 		$('#loader').addClass('hide');
@@ -1570,27 +1639,31 @@ function loadMailboxItems(folderid, mailboxid, parent) {
     });
 }
 
-function loadMessages(mailboxid, folderid, offset) {
+function loadMessages(folderid, offset) {
+	var limit = <?php echo $limit; ?>;
+	var mailboxid = '<?php echo $uid; ?>';
 	var rid = '<?php echo $rid; ?>';
 	
-    $.post('veeam.php', {'action' : 'getmailitems', 'folderid' : folderid, 'offset' : offset, 'mailboxid' : mailboxid, 'rid' : rid}).done(function(data) {
+    $.post('veeam.php', {'action' : 'getmailboxitems', 'rid' : rid, 'mailboxid' : mailboxid, 'folderid' : folderid, 'offset' : offset}).done(function(data) {
         var response = JSON.parse(data);
 
-        if (response.results.length != 0) {
-            fillTable(response, mailboxid);
+        if (typeof response !== undefined && response.results.length !== 0) {
+            fillTable(response);
 			
-			if (response.results.length >= 50) {
+			if (response.results.length >= limit) {
 				$('a.load-more-items').removeClass('hide');
-				$('a.load-more-items').data('offset', offset + 50);
+				$('a.load-more-items').data('offset', offset + limit);
 			} else {
 				$('a.load-more-items').addClass('hide');
 			}
 		} else {
-			$('#table-exchange-items tbody').append('<tr><td class="text-center" colspan="6">No more items available in this folder.</td></tr>');
+			$('a.load-more-items').addClass('hide');
+			$('#table-exchange-items tbody').append('<tr><td class="text-center" colspan="6">No more items available.</td></tr>');
 		}
     });
 }
 <?php
+	}
 }
 ?>
 </script>
@@ -1609,9 +1682,9 @@ function loadMessages(mailboxid, folderid, offset) {
 		Swal.fire({
 			icon: 'info',
 			title: 'Session expired',
-			text: 'Your session has expired and requires you to log in again.'
+			text: 'Your session has expired and requires you to log in again'
 		}).then(function(e) {
-			window.location.href = '/index.php';
+			window.location.href = '/';
 		});
 		</script>
 		<?php

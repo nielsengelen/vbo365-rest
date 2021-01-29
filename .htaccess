@@ -4,10 +4,6 @@ SetEnv HTTP_MOD_REWRITE On
 RewriteEngine On
 
 # Rewrite rules
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^index/?$ index.php [NC,L]
-
 # Exchange
 RewriteRule ^exchange/?$ exchange.php [NC,L]
 RewriteRule ^exchange/([^/]+)/?$ exchange.php?oid=$1 [L,QSA]
@@ -25,6 +21,15 @@ RewriteRule ^sharepoint/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2 [L,QSA]
 RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3 [L,QSA]
 RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3&type=$4 [L,QSA]
 RewriteRule ^sharepoint/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/?$ sharepoint.php?oid=$1&sid=$2&cid=$3&type=$4&fid=$5 [L,QSA]
+
+# Teams
+RewriteRule ^teams/?$ teams.php [NC,L]
+RewriteRule ^teams/([^/]+)/?$ teams.php?oid=$1 [L,QSA]
+RewriteRule ^teams/([^/]+)/([^/]+)/?$ teams.php?oid=$1&tid=$2 [L,QSA]
+
+#RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{THE_REQUEST} ^GET.*index\.php [NC]
+RewriteRule (.*?)index\.php/*(.*) /$1$2 [R=301,NE,L]
 
 # Disable directory browsing, multiviews and enable follow symlinks 
 Options -Indexes -MultiViews +FollowSymLinks

@@ -76,12 +76,14 @@ if (!isset($_SESSION['token'])) {
 		$file = sys_get_temp_dir() . '/' . basename($_POST['file']);
 		$filename = htmlspecialchars(basename($name));
 
-		if ($ext != 'plain')
+		if ($ext !== 'plain')
 			$filename .= '.' . $ext;
 
 		if(!is_file($file))
 			exit('File not found');
 
+		ob_start('');
+		
 		header('Pragma: public');
 		header('Expires: 0');
 		header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
@@ -95,9 +97,9 @@ if (!isset($_SESSION['token'])) {
 			header('Content-Disposition: attachment; filename="' . $filename . '"');
 		} else {
 			header('Last-Modified: ' . gmdate ('D, d M Y H:i:s', filemtime ($file)).' GMT');
-			header('Cache-Control: private', false);
+			header('Cache-Control: private');
 			
-			if ($ext == 'plain') {
+			if ($ext === 'plain' || $ext === 'html') {
 				$mime = get_mime_type($filename);
 				
 				header('Content-Type: ' . $mime);
@@ -108,8 +110,10 @@ if (!isset($_SESSION['token'])) {
 			header('Content-Transfer-Encoding: binary');
 			header('Content-Length: ' . filesize($file));
 			header('Content-Disposition: attachment; filename=" ' . $filename . '"');
-			header('Connection: close');
 		}
+		
+		ob_end_clean();
+		flush();
 
 		readfile($file);
 		unlink($file);
@@ -117,4 +121,3 @@ if (!isset($_SESSION['token'])) {
 		header('Location: index.php');
 	}
 }
-?>

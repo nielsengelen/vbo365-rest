@@ -17,6 +17,12 @@
 .exchange-container table {
   width: 100%;
 }
+.exchange-controls-padding {
+  padding-bottom: 10px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 10px;
+}
 
 #table-exchange-folders th {
   height: 40px;
