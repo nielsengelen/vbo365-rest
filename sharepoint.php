@@ -879,7 +879,10 @@ function loadSites(org, offset) {
 }
 
 function restoreToOriginal(itemid, filetype, type) {
-    var rid = '<?php echo $rid; ?>';
+    var filetype = filetype;
+	var itemid = itemid;
+	var type = type;
+	var rid = '<?php echo $rid; ?>';
 	<?php
 	if (isset($sid)) {
 	?>
@@ -1075,8 +1078,8 @@ function restoreToOriginal(itemid, filetype, type) {
 									var node = $('#jstree').jstree('get_selected', true);
 
 									if (node.length !== 0) {
-										var itemid = node[0].data.folderid;
-										var filetype = 'folders';
+										itemid = node[0].data.folderid;
+										filetype = 'folders';
 										
 										var json = '{ "restoreTo": \
 											{ "userName": "' + user + '", \
@@ -1089,15 +1092,15 @@ function restoreToOriginal(itemid, filetype, type) {
 											} \
 										}';
 									} else {
-										var itemid = '<?php echo $cid; ?>';
+										itemid = '<?php echo $cid; ?>';
 										<?php
 										if (strcmp($type, 'list') === 0) {
 										?>
-										var filetype = 'lists';
+										filetype = 'lists';
 										<?php
 										} else {
 										?>
-										var filetype = 'libraries';
+										filetype = 'libraries';
 										<?php
 										}
 										?>
@@ -1378,8 +1381,8 @@ function restoreToOriginal(itemid, filetype, type) {
 												var node = $('#jstree').jstree('get_selected', true);
 
 												if (node.length !== 0) {
-													var itemid = node[0].data.folderid;
-													var filetype = 'folders';
+													itemid = node[0].data.folderid;
+													filetype = 'folders';
 													
 													var json = '{ "restoreTo": \
 														{ "userCode": "' + usercode + '", \
@@ -1391,15 +1394,15 @@ function restoreToOriginal(itemid, filetype, type) {
 														} \
 													}';
 												} else {
-													var itemid = '<?php echo $cid; ?>';
+													itemid = '<?php echo $cid; ?>';
 													<?php
 													if (strcmp($type, 'list') === 0) {
 													?>
-													var filetype = 'lists';
+													filetype = 'lists';
 													<?php
 													} else {
 													?>
-													var filetype = 'libraries';
+													filetype = 'libraries';
 													<?php
 													}
 													?>
