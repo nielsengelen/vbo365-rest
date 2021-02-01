@@ -831,7 +831,7 @@ function downloadPST(itemid, mailsubject, type) {
 			var mailsubject = 'mailbox-folder-' + mailsubject;
 		} else {
 			var act = 'exportmailbox';	
-			var mailboxid = itemid;
+			mailboxid = itemid;
 			var mailsubject = 'mailbox-' + mailsubject;
 		}
 		
@@ -867,6 +867,8 @@ function downloadPST(itemid, mailsubject, type) {
 }
 
 function restoreToDifferent(itemid, type) {
+	var itemid = itemid;
+	var type = type;
     var rid = '<?php echo $rid; ?>';
 	<?php
 	if (isset($uid)) {
@@ -875,7 +877,6 @@ function restoreToDifferent(itemid, type) {
 	<?php
 	}
 	?>
-	
 	
 	if (type === 'multiple' && $("input[name='checkbox-mail']:checked").length === 0) {
 		Swal.fire({
@@ -1002,7 +1003,7 @@ function restoreToDifferent(itemid, type) {
 				} else if (type == 'fullfolder') {
 					var act = 'restoremailfolder';		
 					var node = $('#jstree').jstree('get_selected', true);
-					var itemid = node[0].data.folderid;
+					itemid = node[0].data.folderid;
 				} else {
 					var act = 'restoremailbox';
 				}
@@ -1069,6 +1070,8 @@ function restoreToDifferent(itemid, type) {
 } 
 
 function restoreToOriginal(itemid, type) {
+	var itemid = itemid;
+	var type = type;
     var rid = '<?php echo $rid; ?>';
 	<?php
 	if (isset($uid)) {
@@ -1077,7 +1080,6 @@ function restoreToOriginal(itemid, type) {
 	<?php
 	}
 	?>
-	
 	
 	if (type == 'multiple' && $("input[name='checkbox-mail']:checked").length == 0) {
 		Swal.fire({
@@ -1198,7 +1200,7 @@ function restoreToOriginal(itemid, type) {
 								} else if (type == 'fullfolder') {
 									var act = 'restoremailfolder';		
 									var node = $('#jstree').jstree('get_selected', true);
-									var itemid = node[0].data.folderid;
+									itemid = node[0].data.folderid;
 								} else {
 									var act = 'restoremailbox';
 								}
@@ -1362,7 +1364,7 @@ function restoreToOriginal(itemid, type) {
 											} else if (type == 'fullfolder') {
 												var act = 'restoremailfolder';		
 												var node = $('#jstree').jstree('get_selected', true);
-												var itemid = node[0].data.folderid;
+												itemid = node[0].data.folderid;
 											} else {
 												var act = 'restoremailbox';
 											}

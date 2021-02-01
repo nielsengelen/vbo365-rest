@@ -885,6 +885,9 @@ function downloadZIP(itemid, itemname, filetype, type) {
 }
 
 function restoreToOriginal(itemid, filetype, type) {
+	var filetype = filetype;
+	var itemid = itemid;
+	var type = type;
     var rid = '<?php echo $rid; ?>';
 	<?php
 	if (isset($uid)) {
@@ -1025,7 +1028,7 @@ function restoreToOriginal(itemid, filetype, type) {
 									var act = 'restoreonedriveitem';
 								} else if (type == 'full') {
 									var act = 'restoreonedrive';
-									var userid = itemid;
+									userid = itemid;
 								}
 								
 								var json = '{ "restoretoOriginallocation": \
@@ -1204,7 +1207,7 @@ function restoreToOriginal(itemid, filetype, type) {
 												var act = 'restoreonedriveitem';
 											} else if (type == 'full') {
 												var act = 'restoreonedrive';
-												var userid = itemid;
+												userid = itemid;
 											}
 											
 											var json = '{ "restoretoOriginallocation": \
@@ -1215,7 +1218,7 @@ function restoreToOriginal(itemid, filetype, type) {
 											}';
 										}
 
-										$.post('veeam.php', {'action' : act, 'rid' : rid, 'userid' : userid, 'itemid' : itemid, 'json' : json, 'type' : filetype}).done(function(data) {						
+										$.post('veeam.php', {'action' : act, 'rid' : rid, 'userid' : userid, 'itemid' : itemid, 'json' : json, 'type' : filetype}).done(function(data) {
 											var response = JSON.parse(data);
 											
 											if (response['restoreFailed'] === undefined) {

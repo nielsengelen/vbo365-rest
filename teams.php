@@ -1928,6 +1928,8 @@ function restoreChannelToOriginal(channelid) {
 }
 
 function restoreFilesToOriginal(itemid, type) {
+	var itemid = itemid;
+	var type = type;
     var rid = '<?php echo $rid; ?>';
 	var teamid = '<?php echo $tid; ?>';
 	
