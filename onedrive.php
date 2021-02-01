@@ -219,8 +219,19 @@ if (isset($_SESSION['token'])) {
 					});
 					</script>
 				</div>
+				<?php
+				if (strtolower($authtype) === 'mfa' && $check === false) {
+				?>
+				<button class="btn btn-default btn-secondary btn-start-restore" title="Start Restore" data-oid="tenant" data-latest="false">Start Restore</button>
+				<button class="btn btn-default btn-secondary btn-start-restore" title="Explore Last Backup (<?php echo date('d/m/Y H:i T', strtotime($org['lastBackuptime'])); ?>)" data-oid="tenant" data-pit="<?php echo date('Y.m.d H:i', strtotime($org['lastBackuptime'])); ?>" data-latest="true">Explore Last Backup</button>
+				<?php
+				} else {
+				?>
 				<button class="btn btn-default btn-secondary btn-start-restore" title="Start Restore" data-oid="<?php echo $oid; ?>" data-latest="false">Start Restore</button>
 				<button class="btn btn-default btn-secondary btn-start-restore" title="Explore Last Backup (<?php echo date('d/m/Y H:i T', strtotime($org['lastBackuptime'])); ?>)" data-oid="<?php echo $oid; ?>" data-pit="<?php echo date('Y.m.d H:i', strtotime($org['lastBackuptime'])); ?>" data-latest="true">Explore Last Backup</button>
+				<?php
+				}
+				?>
 			</div>
 			<?php
 			}
