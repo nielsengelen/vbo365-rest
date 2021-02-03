@@ -127,6 +127,7 @@ if (isset($_SESSION['token'])) {
 				$org = $veeam->getOrganization();
 				$oid = $org['id'];
 				$menu = true;
+				$restoretype = 'tenant';
 				
 				echo '<li class="active"><a href="onedrive">' . $org['name'] . '</a></li>';
 			}
@@ -220,7 +221,7 @@ if (isset($_SESSION['token'])) {
 					</script>
 				</div>
 				<?php
-				if (strtolower($authtype) === 'mfa' && $check === false) {
+				if (isset($restoretype) && preg_match('/tenant/', $restoretype)) {
 				?>
 				<button class="btn btn-default btn-secondary btn-start-restore" title="Start Restore" data-oid="tenant" data-latest="false">Start Restore</button>
 				<button class="btn btn-default btn-secondary btn-start-restore" title="Explore Last Backup (<?php echo date('d/m/Y H:i T', strtotime($org['lastBackuptime'])); ?>)" data-oid="tenant" data-pit="<?php echo date('Y.m.d H:i', strtotime($org['lastBackuptime'])); ?>" data-latest="true">Explore Last Backup</button>
