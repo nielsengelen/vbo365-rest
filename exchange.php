@@ -235,7 +235,7 @@ echo '</pre>';
 			}
 			
 			if (!isset($_SESSION['rid'])) {
-				if (isset($oid) && !empty($oid)) {
+				if (isset($oid) && !empty($oid) && $restoretype != 'tenant') {
 					$users = $veeam->getLicensedUsers($oid);
 					$repo = $veeam->getOrganizationRepository($oid);
 					$usersarray = array();
