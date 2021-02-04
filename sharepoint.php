@@ -238,7 +238,7 @@ if (isset($_SESSION['token'])) {
 			<?php
 			if (isset($_GET['oid'])) $oid = $_GET['oid'];
 			
-			if (isset($oid) && !isset($rid) && !preg_match('/tenant/', $restoretype)) {
+			if (isset($oid) && !isset($rid)) {
 				if (strtolower($authtype) !== 'mfa' && $check === false && strtolower($administrator) === 'yes') {
 					$org = $veeam->getOrganizationByID($oid);
 				}
@@ -277,7 +277,7 @@ if (isset($_SESSION['token'])) {
 			}
 			
 			if (!isset($_SESSION['rid'])) {
-				if (isset($oid) && !empty($oid)) {
+				if (isset($oid) && !empty($oid) && !preg_match('/tenant/', $restoretype)) {
 					$org = $veeam->getOrganizationByID($oid);
 					$repo = $veeam->getOrganizationRepository($oid);
 					
