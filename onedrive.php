@@ -199,7 +199,7 @@ if (isset($_SESSION['token'])) {
 			<?php
 			if (isset($_GET['oid'])) $oid = $_GET['oid'];
 			
-			if (isset($oid) && !isset($rid) && preg_match('/tenant/', $restoretype)) {
+			if (isset($oid) && !isset($rid) && !preg_match('/tenant/', $restoretype)) {
 				if (strtolower($authtype) !== 'mfa' && $check === false && strtolower($administrator) === 'yes') {
 					$org = $veeam->getOrganizationByID($oid);
 				}

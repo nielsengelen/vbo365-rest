@@ -232,7 +232,7 @@ if (isset($_SESSION['token'])) {
 			}
 			
 			if (!isset($_SESSION['rid'])) {
-				if (isset($oid) && !empty($oid) && preg_match('/tenant/', $restoretype)) {
+				if (isset($oid) && !empty($oid) && !preg_match('/tenant/', $restoretype)) {
 					$users = $veeam->getLicensedUsers($oid);
 					$repo = $veeam->getOrganizationRepository($oid);
 					$usersarray = array();
