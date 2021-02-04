@@ -191,6 +191,9 @@ if (isset($_SESSION['token'])) {
 		<h1>Exchange</h1>
 		<div class="exchange-container">
 			<?php
+	echo '<pre>';
+print_r($_SESSION);
+echo '</pre>';
 			if (isset($_GET['oid'])) $oid = $_GET['oid'];
 			
 			if (isset($oid) && !isset($rid)) {
