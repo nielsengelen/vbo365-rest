@@ -771,7 +771,7 @@ function loadAccounts(org, offset) {
 						<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">Restore <span class="caret"></span></button> \
 						<ul class="dropdown-menu dropdown-menu-right"> \
 						<li class="dropdown-header">Export to</li> \
-						<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadZIP( \'' + response.results[i].name + '\', \'' + response.results[i].name + '\', \'documents\', \'full\')"><i class="fa fa-download"></i> ZIP file</a></li> \
+						<li><a class="dropdown-link" href="javascript:void(0);" onclick="downloadZIP( \'' + response.results[i].id + '\', \'' + response.results[i].name + '\', \'documents\', \'full\')"><i class="fa fa-download"></i> ZIP file</a></li> \
 						<li class="divider"></li> \
 						<li class="dropdown-header">Restore to</li> \
 						<li><a class="dropdown-link" href="javascript:void(0);" onclick="restoreToOriginal(\'' + response.results[i].id + '\', \'documents\', \'full\')"><i class="fa fa-upload"></i> Original location</a></li> \
