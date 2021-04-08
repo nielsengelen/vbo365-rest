@@ -54,28 +54,6 @@ if (isset($_POST['logout'])) {
 	}
 }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><?php echo $title; ?></title>
-    <base href="/" />
-    <link rel="shortcut icon" href="favicon.ico" />
-    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
-    <link rel="stylesheet" type="text/css" href="css/fontawesome.min.css" />
-    <link rel="stylesheet" type="text/css" href="css/style.css" />
-	<link rel="stylesheet" type="text/css" href="css/sweetalert2.min.css" />	
-    <script src="js/jquery.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-	<script src="js/clipboard.min.js"></script>
-    <script src="js/fontawesome.min.js"></script>
-    <script src="js/filesize.min.js"></script>
-	<script src="js/jquery.redirect.js"></script>
-    <script src="js/moment.min.js"></script>
-	<script src="js/sweetalert2.all.min.js"></script>
-</head>
-<body>
 <?php
 if (file_exists('setup.php')) {
 	?>
@@ -109,6 +87,28 @@ if (isset($_SESSION['token'])) {
 	
 	if (isset($user) && strtolower($authtype) != 'mfa' && $check === false && strtolower($administrator) == 'yes') {
 	?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><?php echo $title; ?></title>
+    <base href="/" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/fontawesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
+	<link rel="stylesheet" type="text/css" href="css/sweetalert2.min.css" />	
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+	<script src="js/clipboard.min.js"></script>
+    <script src="js/fontawesome.min.js"></script>
+    <script src="js/filesize.min.js"></script>
+	<script src="js/jquery.redirect.js"></script>
+    <script src="js/moment.min.js"></script>
+	<script src="js/sweetalert2.all.min.js"></script>
+</head>
+<body>
 	<nav class="navbar navbar-inverse navbar-static-top">
 		<div class="container-fluid">
 			<ul class="nav navbar-header">
