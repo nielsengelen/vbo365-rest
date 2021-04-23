@@ -21,7 +21,9 @@ function getDeviceCode($clientid, $tenantid, $scope) {
 					'headers' => [
 								'Accept' => 'application/json',
 								'Content-Type' => 'application/x-www-form-urlencoded',
-								]
+								],
+					'http_errors' => false,
+					'verify' => false
 				]);
 
 
@@ -58,7 +60,8 @@ function getToken($clientid, $tenantid, $devicecode) {
 					'headers' => [
 								'Accept' => 'application/json',
 								'Content-Type' => 'application/x-www-form-urlencoded',
-								]
+								],
+					'verify' => false
 				]);
 
 		if ($response->getStatusCode() === 200) {
