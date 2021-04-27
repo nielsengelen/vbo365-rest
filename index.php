@@ -53,19 +53,35 @@ if (isset($_POST['logout'])) {
 		}
 	}
 }
-?>
-<?php
+
 if (file_exists('setup.php')) {
 	?>
-	<script>
-	Swal.fire({
-		icon: 'error',
-		title: 'Error',
-		allowOutsideClick: false,
-		showConfirmButton: false,
-		text: 'Setup file is still available within the installation folder. You must remove this file in order to continue'
-	});
-	</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Error</title>
+<base href="/" />
+<link rel="shortcut icon" href="favicon.ico" />
+<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
+<link rel="stylesheet" type="text/css" href="css/fontawesome.min.css" />
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<link rel="stylesheet" type="text/css" href="css/sweetalert2.min.css" />
+<script src="js/sweetalert2.all.min.js"></script>
+</head>
+<body>
+<script>
+Swal.fire({
+	icon: 'error',
+	title: 'Error',
+	allowOutsideClick: false,
+	showConfirmButton: false,
+	text: 'Setup file is still available within the installation folder. You must remove this file in order to continue'
+});
+</script>
+</body>
+</html>
 	<?php
 	die();
 }
@@ -98,7 +114,7 @@ if (isset($_SESSION['token'])) {
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="css/fontawesome.min.css" />
     <link rel="stylesheet" type="text/css" href="css/style.css" />
-	<link rel="stylesheet" type="text/css" href="css/sweetalert2.min.css" />	
+	<link rel="stylesheet" type="text/css" href="css/sweetalert2.min.css" />
     <script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
 	<script src="js/clipboard.min.js"></script>
